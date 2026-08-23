@@ -12,10 +12,12 @@ abstract class AppStrings {
   static const supportedLocales = [Locale('ar'), Locale('en')];
 
   static AppStrings of(BuildContext context) =>
-      Localizations.of<AppStrings>(context, AppStrings) ?? const ArabicStrings();
+      Localizations.of<AppStrings>(context, AppStrings) ??
+      const ArabicStrings();
 
-  static AppStrings forLocale(Locale locale) =>
-      locale.languageCode == 'en' ? const EnglishStrings() : const ArabicStrings();
+  static AppStrings forLocale(Locale locale) => locale.languageCode == 'en'
+      ? const EnglishStrings()
+      : const ArabicStrings();
 
   bool get isArabic;
   TextDirection get direction =>
@@ -127,6 +129,10 @@ abstract class AppStrings {
   String get adminNoResults;
 
   // ── gate ─────────────────────────────────────────────────────────────────
+  String get legendServed;
+  String get legendUpcoming;
+  String get legendSkipped;
+
   String get gateReader;
   String get gateEntry;
   String get gateExit;
@@ -387,6 +393,13 @@ class ArabicStrings extends AppStrings {
   String get adminNoResults => 'لا نتائج';
 
   @override
+  String get legendServed => 'تمت';
+  @override
+  String get legendUpcoming => 'قادمة';
+  @override
+  String get legendSkipped => 'متخطّاة';
+
+  @override
   String get gateReader => 'قارئ البوابة';
   @override
   String get gateEntry => 'دخول';
@@ -494,9 +507,8 @@ class ArabicStrings extends AppStrings {
       };
 
   @override
-  String metres(int n) => n >= 1000
-      ? '${(n / 1000).toStringAsFixed(1)} كم'
-      : '$n م';
+  String metres(int n) =>
+      n >= 1000 ? '${(n / 1000).toStringAsFixed(1)} كم' : '$n م';
 }
 
 class EnglishStrings extends AppStrings {
@@ -710,6 +722,13 @@ class EnglishStrings extends AppStrings {
   String get adminSearchStudents => 'Search by name or grade';
   @override
   String get adminNoResults => 'No results';
+
+  @override
+  String get legendServed => 'Served';
+  @override
+  String get legendUpcoming => 'Upcoming';
+  @override
+  String get legendSkipped => 'Skipped';
 
   @override
   String get gateReader => 'Gate reader';

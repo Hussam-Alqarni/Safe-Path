@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
 import 'package:safe_path/domain/services/eta_engine.dart';
 
@@ -47,7 +46,10 @@ void main() {
       final trip = await buildTrip();
       final etas = engine.etasFor(trip: trip, currentSpeedKmh: 30, now: now);
       for (var i = 1; i < etas.length; i++) {
-        expect(etas[i].minutesAway, greaterThanOrEqualTo(etas[i - 1].minutesAway));
+        expect(
+          etas[i].minutesAway,
+          greaterThanOrEqualTo(etas[i - 1].minutesAway),
+        );
       }
     });
 
@@ -81,9 +83,13 @@ void main() {
     test('a negative or NaN speed falls back rather than corrupting the eta',
         () async {
       final trip = await buildTrip();
-      final negative = engine.etasFor(trip: trip, currentSpeedKmh: -5, now: now);
-      final nan =
-          engine.etasFor(trip: trip, currentSpeedKmh: double.nan, now: now);
+      final negative =
+          engine.etasFor(trip: trip, currentSpeedKmh: -5, now: now);
+      final nan = engine.etasFor(
+        trip: trip,
+        currentSpeedKmh: double.nan,
+        now: now,
+      );
       // Measured at a stop genuinely ahead of the bus, not the one it is on.
       expect(negative.last.minutesAway, greaterThan(0));
       expect(nan.last.minutesAway, greaterThan(0));
@@ -105,7 +111,10 @@ void main() {
       final later =
           engine.etasFor(trip: advanced, currentSpeedKmh: 30, now: now);
 
-      expect(later.last.remainingMetres, lessThan(atStart.last.remainingMetres));
+      expect(
+        later.last.remainingMetres,
+        lessThan(atStart.last.remainingMetres),
+      );
     });
   });
 
@@ -118,7 +127,8 @@ void main() {
         distanceCoveredMetres: firstStop.distanceAlongRouteMetres - 900,
       );
 
-      final etas = engine.etasFor(trip: advanced, currentSpeedKmh: 30, now: now);
+      final etas =
+          engine.etasFor(trip: advanced, currentSpeedKmh: 30, now: now);
       final triggers =
           engine.evaluateTriggers(trip: advanced, etas: etas, now: now);
 
@@ -132,14 +142,14 @@ void main() {
         distanceCoveredMetres: firstStop.distanceAlongRouteMetres - 900,
         stops: trip.stops
             .map(
-              (s) => s.stopId == 'stop-a'
-                  ? s.copyWith(approachNotified: true)
-                  : s,
+              (s) =>
+                  s.stopId == 'stop-a' ? s.copyWith(approachNotified: true) : s,
             )
             .toList(),
       );
 
-      final etas = engine.etasFor(trip: advanced, currentSpeedKmh: 30, now: now);
+      final etas =
+          engine.etasFor(trip: advanced, currentSpeedKmh: 30, now: now);
       final triggers =
           engine.evaluateTriggers(trip: advanced, etas: etas, now: now);
 
@@ -176,7 +186,8 @@ void main() {
       );
 
       final etas = engine.etasFor(trip: trip, currentSpeedKmh: 30, now: now);
-      final triggers = engine.evaluateTriggers(trip: trip, etas: etas, now: now);
+      final triggers =
+          engine.evaluateTriggers(trip: trip, etas: etas, now: now);
 
       expect(triggers.approaching, isNot(contains('stop-b')));
       expect(triggers.arrived, isNot(contains('stop-b')));
@@ -204,7 +215,8 @@ void main() {
       final farEta = etas.firstWhere((e) => e.stopId == 'stop-far');
       expect(farEta.minutesAway, greaterThan(5));
 
-      final triggers = engine.evaluateTriggers(trip: trip, etas: etas, now: now);
+      final triggers =
+          engine.evaluateTriggers(trip: trip, etas: etas, now: now);
       expect(triggers.approaching, isNot(contains('stop-far')));
       expect(triggers.arrived, isNot(contains('stop-far')));
     });

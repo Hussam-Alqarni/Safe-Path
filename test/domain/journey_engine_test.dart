@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
-import 'package:safe_path/domain/models/geo.dart';
 import 'package:safe_path/domain/services/journey_engine.dart';
 
 import 'fixtures.dart';

@@ -104,7 +104,13 @@ abstract final class SeedData {
     _StudentSeed('محمد البقمي', 'Mohammed Albaqami', '4', 'أ', 'stop-salamah'),
     _StudentSeed('رغد المطيري', 'Raghad Almutairi', '5', 'ب', 'stop-salamah'),
     // East route
-    _StudentSeed('يوسف الثقفي', 'Yousef Althaqafi', '3', 'أ', 'stop-musharifah'),
+    _StudentSeed(
+      'يوسف الثقفي',
+      'Yousef Althaqafi',
+      '3',
+      'أ',
+      'stop-musharifah',
+    ),
     _StudentSeed('مها الشمري', 'Maha Alshammari', '6', 'ب', 'stop-musharifah'),
     _StudentSeed('خالد الجهني', 'Khalid Aljuhani', '4', 'أ', 'stop-musharifah'),
     _StudentSeed('سلمى الرشيدي', 'Salma Alrashidi', '2', 'أ', 'stop-faihaa'),
@@ -280,8 +286,7 @@ abstract final class SeedData {
     ),
   ];
 
-  static Map<String, BusStop> get stopsById =>
-      {for (final s in stops) s.id: s};
+  static Map<String, BusStop> get stopsById => {for (final s in stops) s.id: s};
 
   static Map<String, Student> get studentsById =>
       {for (final s in students) s.id: s};
@@ -314,6 +319,5 @@ class _StudentSeed {
 extension on String {
   /// First [count] user-perceived characters. Arabic letters can combine, so
   /// substring on code units would occasionally split a grapheme.
-  String characters(int count) =>
-      length <= count ? this : substring(0, count);
+  String characters(int count) => length <= count ? this : substring(0, count);
 }

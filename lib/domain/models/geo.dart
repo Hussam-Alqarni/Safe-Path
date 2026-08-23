@@ -172,7 +172,8 @@ class RoutePath {
     final lengthSquared = dx * dx + dy * dy;
     if (lengthSquared == 0) return _Projection(a, 0);
 
-    final t = (((px - ax) * dx + (py - ay) * dy) / lengthSquared).clamp(0.0, 1.0);
+    final t =
+        (((px - ax) * dx + (py - ay) * dy) / lengthSquared).clamp(0.0, 1.0);
     final point = a.lerp(b, t);
     return _Projection(point, a.distanceTo(point));
   }

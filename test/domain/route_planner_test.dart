@@ -110,7 +110,8 @@ void main() {
         expect(
           served[i].distanceAlongRouteMetres,
           greaterThan(served[i - 1].distanceAlongRouteMetres),
-          reason: 'stop ${served[i].stopId} must lie beyond ${served[i - 1].stopId}',
+          reason:
+              'stop ${served[i].stopId} must lie beyond ${served[i - 1].stopId}',
         );
       }
     });
@@ -251,8 +252,9 @@ void main() {
 
     test('replanning recomputes distances for the stops that remain', () async {
       final trip = await build();
-      final before =
-          trip.stops.firstWhere((s) => s.stopId == 'stop-c').distanceAlongRouteMetres;
+      final before = trip.stops
+          .firstWhere((s) => s.stopId == 'stop-c')
+          .distanceAlongRouteMetres;
 
       final replanned = await planner.skipStop(
         trip: trip,

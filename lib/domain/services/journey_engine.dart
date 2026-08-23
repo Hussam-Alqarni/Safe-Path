@@ -25,7 +25,8 @@ class StudentDaySnapshot {
   AttendanceEvent? get lastEvent => events.isEmpty ? null : events.last;
 
   bool get isOnBoard =>
-      stage == JourneyStage.onMorningBus || stage == JourneyStage.onAfternoonBus;
+      stage == JourneyStage.onMorningBus ||
+      stage == JourneyStage.onAfternoonBus;
 
   bool get isSafelyResolved =>
       stage == JourneyStage.deliveredHome ||
@@ -55,9 +56,7 @@ class JourneyEngine {
     required List<SafetyAlert> allAlerts,
     AbsenceRecord? absence,
   }) {
-    final events = allEvents
-        .where((e) => e.studentId == studentId)
-        .toList()
+    final events = allEvents.where((e) => e.studentId == studentId).toList()
       ..sort((a, b) => a.occurredAt.compareTo(b.occurredAt));
 
     final alerts = allAlerts

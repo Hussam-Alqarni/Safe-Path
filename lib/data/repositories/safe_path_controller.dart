@@ -94,7 +94,8 @@ class SafePathController extends StateNotifier<AppState> {
     _subscription = _source.events.listen(_onFleetEvent);
 
     _staleTimer?.cancel();
-    _staleTimer = Timer.periodic(const Duration(seconds: 5), (_) => _markStale());
+    _staleTimer =
+        Timer.periodic(const Duration(seconds: 5), (_) => _markStale());
   }
 
   @override
@@ -502,7 +503,10 @@ class SafePathController extends StateNotifier<AppState> {
   }
 
   /// Rebuilds the affected stop on every trip that has not yet served it.
-  Future<void> _replanForStudent(String studentId, {required bool absent}) async {
+  Future<void> _replanForStudent(
+    String studentId, {
+    required bool absent,
+  }) async {
     final student = SeedData.studentsById[studentId];
     final stopId = student?.stopId;
     if (stopId == null) return;
@@ -589,8 +593,9 @@ class SafePathController extends StateNotifier<AppState> {
 
     if (response != GuardianConfirmation.disputed) return;
 
-    final event =
-        state.attendanceEvents.where((e) => e.id == attendanceEventId).firstOrNull;
+    final event = state.attendanceEvents
+        .where((e) => e.id == attendanceEventId)
+        .firstOrNull;
     if (event == null) return;
 
     final alert = SafetyAlert(
@@ -825,14 +830,14 @@ class SafePathController extends StateNotifier<AppState> {
     );
   }
 
-  String _studentName(String id) =>
-      SeedData.studentsById[id]?.fullNameAr ?? id;
+  String _studentName(String id) => SeedData.studentsById[id]?.fullNameAr ?? id;
   String _studentNameEn(String id) =>
       SeedData.studentsById[id]?.fullNameEn ?? id;
   String _userName(String? id) =>
       id == null ? 'السائق' : SeedData.usersById[id]?.fullNameAr ?? 'السائق';
-  String _userNameEn(String? id) =>
-      id == null ? 'the driver' : SeedData.usersById[id]?.fullNameEn ?? 'the driver';
+  String _userNameEn(String? id) => id == null
+      ? 'the driver'
+      : SeedData.usersById[id]?.fullNameEn ?? 'the driver';
   String _stopName(String id) => SeedData.stopsById[id]?.nameAr ?? id;
   String _stopNameEn(String id) => SeedData.stopsById[id]?.nameEn ?? id;
   String _busPlate(String id) => SeedData.busesById[id]?.plateNumber ?? id;

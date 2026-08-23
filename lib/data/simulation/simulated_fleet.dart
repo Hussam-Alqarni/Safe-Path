@@ -132,7 +132,11 @@ class SimulatedFleet implements FleetEventSource {
     }
   }
 
-  void _advance(_SimulatedVehicle vehicle, double elapsedSeconds, DateTime now) {
+  void _advance(
+    _SimulatedVehicle vehicle,
+    double elapsedSeconds,
+    DateTime now,
+  ) {
     final trip = vehicle.trip;
     final path = trip.path;
 
