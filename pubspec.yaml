@@ -21,9 +21,6 @@ dependencies:
   # Maps — Google Maps is the production renderer.
   google_maps_flutter: ^2.10.0
 
-  # Typography (Arabic + Latin). Falls back to platform fonts when offline.
-  google_fonts: ^6.2.1
-
   # Utilities
   intl: any
   collection: ^1.19.0
@@ -36,3 +33,23 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Fonts are bundled rather than fetched at runtime: the app must render
+  # identically on a school's weak wi-fi and on a bus with no signal.
+  fonts:
+    - family: ReadexPro
+      fonts:
+        - asset: assets/fonts/ReadexPro-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/ReadexPro-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/ReadexPro-SemiBold.ttf
+          weight: 600
+    - family: PlexArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
