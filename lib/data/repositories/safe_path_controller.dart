@@ -45,6 +45,7 @@ class SafePathController extends StateNotifier<AppState> {
 
   StreamSubscription<FleetEvent>? _subscription;
   Timer? _staleTimer;
+  Future<void>? _bootstrapping;
 
   String _id() => _uuid.v4();
 
@@ -66,7 +67,14 @@ class SafePathController extends StateNotifier<AppState> {
   // ── lifecycle ────────────────────────────────────────────────────────────
 
   /// Builds today's trips and wires up the telemetry stream.
-  Future<void> bootstrap() async {
+  ///
+  /// Safe to call more than once: a second caller joins the first rather than
+  /// racing it. Two concurrent runs would each tear down the other's stream
+  /// subscription mid-setup, and the app itself bootstraps on its first frame,
+  /// so any caller that also asks for it would otherwise be a coin flip.
+  Future<void> bootstrap() => _bootstrapping ??= _bootstrap();
+
+  Future<void> _bootstrap() async {
     final today = DateTime.now();
     final serviceDate = DateTime(today.year, today.month, today.day);
 
