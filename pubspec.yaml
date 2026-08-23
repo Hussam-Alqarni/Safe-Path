@@ -1,0 +1,38 @@
+name: safe_path
+description: >-
+  Safe Path — smart school transport safety platform. NFC attendance on the bus
+  and at the school gate, live bus tracking, adaptive routing, and instant
+  guardian notifications.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Maps — Google Maps is the production renderer.
+  google_maps_flutter: ^2.10.0
+
+  # Typography (Arabic + Latin). Falls back to platform fonts when offline.
+  google_fonts: ^6.2.1
+
+  # Utilities
+  intl: any
+  collection: ^1.19.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
