@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safe_path/core/config/app_config.dart';
 import 'package:safe_path/data/repositories/app_state.dart';
 import 'package:safe_path/data/repositories/safe_path_controller.dart';
+import 'package:safe_path/data/seed/seed_data.dart';
 import 'package:safe_path/data/services/http_short_link_resolver.dart';
 import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
 import 'package:safe_path/domain/services/journey_engine.dart';
 import 'package:safe_path/domain/services/location_link_parser.dart';
+import 'package:safe_path/domain/services/navigation_service.dart';
 
 /// Overridden in main() so the same widget tree can run against a demo
 /// configuration or a live one without any screen knowing the difference.
@@ -42,6 +44,31 @@ final shortLinkResolverProvider = Provider<ShortLinkResolver>((ref) {
 final studentsProvider = Provider<List<Student>>(
   (ref) => ref.watch(controllerProvider).students,
 );
+
+/// A fingerprint of a trip's *plan*, ignoring its position.
+///
+/// Instructions must be rebuilt when a stop is skipped and the route redrawn,
+/// but not on every position report — and a report arrives every few seconds.
+/// Riverpod only notifies when a value changes, so depending on this instead
+/// of the trip means the expensive work runs when the plan does.
+final tripPlanSignatureProvider = Provider.family<String, String>((ref, tripId) {
+  final trip = ref.watch(controllerProvider).tripById(tripId);
+  if (trip == null) return 'none';
+  final served = trip.stops.where((s) => s.status != TripStopStatus.skipped);
+  return '${trip.id}|${trip.path.totalDistanceMetres.round()}|'
+      '${served.map((s) => s.stopId).join(',')}';
+});
+
+final navigationStepsProvider =
+    FutureProvider.family<List<NavigationStep>, String>((ref, tripId) async {
+  ref.watch(tripPlanSignatureProvider(tripId));
+  final trip = ref.read(controllerProvider).tripById(tripId);
+  if (trip == null) return const [];
+  return const GeometryNavigationService().stepsFor(
+    trip: trip,
+    stopsById: SeedData.stopsById,
+  );
+});
 
 final openAlertsProvider = Provider<List<SafetyAlert>>(
   (ref) => ref.watch(controllerProvider).openAlerts,

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:safe_path/domain/enums.dart';
+import 'package:safe_path/domain/services/navigation_service.dart';
 
 /// Every user-facing string, in both supported languages.
 ///
@@ -129,6 +130,16 @@ abstract class AppStrings {
   String get adminNoResults;
 
   // ── gate ─────────────────────────────────────────────────────────────────
+  // ── navigation ───────────────────────────────────────────────────────────
+  String get navigate;
+  String get exitNavigation;
+  String get thenNext;
+  String get openInGoogleMaps;
+  String get followBus;
+  String get showTraffic;
+  String maneuverLabel(Maneuver maneuver);
+  String maneuverToStop(Maneuver maneuver, String stopName);
+
   // ── home location ────────────────────────────────────────────────────────
   String get homeLocation;
   String get setHomeFromLink;
@@ -410,6 +421,38 @@ class ArabicStrings extends AppStrings {
   String get adminSearchStudents => 'ابحث باسم الطالب أو الصف';
   @override
   String get adminNoResults => 'لا نتائج';
+
+  @override
+  String get navigate => 'الملاحة';
+  @override
+  String get exitNavigation => 'إنهاء الملاحة';
+  @override
+  String get thenNext => 'ثم';
+  @override
+  String get openInGoogleMaps => 'فتح في خرائط جوجل';
+  @override
+  String get followBus => 'تتبّع الحافلة';
+  @override
+  String get showTraffic => 'حركة المرور';
+
+  @override
+  String maneuverLabel(Maneuver maneuver) => switch (maneuver) {
+        Maneuver.depart => 'انطلق',
+        Maneuver.straight => 'واصل مستقيماً',
+        Maneuver.slightLeft => 'انحرف يساراً قليلاً',
+        Maneuver.left => 'انعطف يساراً',
+        Maneuver.sharpLeft => 'انعطف يساراً بحدة',
+        Maneuver.slightRight => 'انحرف يميناً قليلاً',
+        Maneuver.right => 'انعطف يميناً',
+        Maneuver.sharpRight => 'انعطف يميناً بحدة',
+        Maneuver.uTurn => 'استدر للخلف',
+        Maneuver.arriveStop => 'وصلت المحطة',
+        Maneuver.arriveDestination => 'وصلت المدرسة',
+      };
+
+  @override
+  String maneuverToStop(Maneuver maneuver, String stopName) =>
+      maneuver == Maneuver.arriveStop ? 'محطة $stopName' : maneuverLabel(maneuver);
 
   @override
   String get homeLocation => 'موقع المنزل';
@@ -780,6 +823,38 @@ class EnglishStrings extends AppStrings {
   String get adminSearchStudents => 'Search by name or grade';
   @override
   String get adminNoResults => 'No results';
+
+  @override
+  String get navigate => 'Navigate';
+  @override
+  String get exitNavigation => 'Exit navigation';
+  @override
+  String get thenNext => 'then';
+  @override
+  String get openInGoogleMaps => 'Open in Google Maps';
+  @override
+  String get followBus => 'Follow the bus';
+  @override
+  String get showTraffic => 'Traffic';
+
+  @override
+  String maneuverLabel(Maneuver maneuver) => switch (maneuver) {
+        Maneuver.depart => 'Start driving',
+        Maneuver.straight => 'Continue straight',
+        Maneuver.slightLeft => 'Bear left',
+        Maneuver.left => 'Turn left',
+        Maneuver.sharpLeft => 'Sharp left',
+        Maneuver.slightRight => 'Bear right',
+        Maneuver.right => 'Turn right',
+        Maneuver.sharpRight => 'Sharp right',
+        Maneuver.uTurn => 'Make a U-turn',
+        Maneuver.arriveStop => 'Arrive at the stop',
+        Maneuver.arriveDestination => 'Arrive at the school',
+      };
+
+  @override
+  String maneuverToStop(Maneuver maneuver, String stopName) =>
+      maneuver == Maneuver.arriveStop ? 'Stop: \$stopName' : maneuverLabel(maneuver);
 
   @override
   String get homeLocation => 'Home location';

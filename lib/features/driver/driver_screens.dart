@@ -7,6 +7,7 @@ import 'package:safe_path/data/repositories/providers.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
 import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
+import 'package:safe_path/features/driver/navigation_screen.dart';
 import 'package:safe_path/features/map/bus_position_animator.dart';
 import 'package:safe_path/features/map/map_view.dart';
 import 'package:safe_path/shared/widgets/common.dart';
@@ -68,8 +69,25 @@ class DriverTripScreen extends ConsumerWidget {
               school: state.school.location,
               live: position,
               height: 220,
+              followBus: true,
+              showTraffic: true,
             ),
           ),
+        if (trip.status == TripStatus.inProgress) ...[
+          const SizedBox(height: Gap.md),
+          // Full-screen guidance is a deliberate mode switch, not the default:
+          // the trip screen is for managing students, the driving view is for
+          // driving, and mixing them serves neither.
+          FilledButton.icon(
+            icon: const Icon(Icons.navigation_rounded),
+            label: Text(AppStrings.of(context).navigate),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => DriverNavigationScreen(tripId: trip.id),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: Gap.lg),
         _CurrentStopPanel(trip: trip),
       ],

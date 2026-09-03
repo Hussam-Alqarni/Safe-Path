@@ -32,3 +32,4 @@ Thumbs.db
 **/secrets.dart
 android/local.properties
 android/key.properties
+local.properties

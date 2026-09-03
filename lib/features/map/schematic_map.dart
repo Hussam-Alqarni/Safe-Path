@@ -22,6 +22,7 @@ class SchematicMap extends StatelessWidget {
     required this.stopsById,
     required this.school,
     this.busPosition,
+    this.homes = const [],
     this.showSchool = true,
     super.key,
   });
@@ -31,6 +32,10 @@ class SchematicMap extends StatelessWidget {
   final Map<String, BusStop> stopsById;
   final LatLngPoint school;
   final InterpolatedPosition? busPosition;
+
+  /// Student homes, so the walk from a door to its stop is visible.
+  final List<LatLngPoint> homes;
+
   final bool showSchool;
 
   @override
@@ -44,6 +49,7 @@ class SchematicMap extends StatelessWidget {
           stopsById: stopsById,
           school: school,
           busPosition: busPosition,
+          homes: homes,
           showSchool: showSchool,
           canvas: c.sunken,
           grid: c.line,
@@ -70,6 +76,7 @@ class _SchematicPainter extends CustomPainter {
     required this.stopsById,
     required this.school,
     required this.busPosition,
+    required this.homes,
     required this.showSchool,
     required this.canvas,
     required this.grid,
@@ -89,6 +96,7 @@ class _SchematicPainter extends CustomPainter {
   final Map<String, BusStop> stopsById;
   final LatLngPoint school;
   final InterpolatedPosition? busPosition;
+  final List<LatLngPoint> homes;
   final bool showSchool;
 
   final Color canvas;
@@ -114,6 +122,7 @@ class _SchematicPainter extends CustomPainter {
 
     _paintGrid(c, size);
     _paintRoute(c, toScreen);
+    _paintHomes(c, toScreen);
     _paintStops(c, toScreen);
     if (showSchool) _paintSchool(c, toScreen(school));
     final bus = busPosition;
@@ -234,6 +243,24 @@ class _SchematicPainter extends CustomPainter {
     }
   }
 
+  /// Small hollow markers, deliberately quieter than stops: a home is context
+  /// for a stop, not a place the bus goes.
+  void _paintHomes(Canvas c, Offset Function(LatLngPoint) toScreen) {
+    if (homes.isEmpty) return;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..color = stopPending.withValues(alpha: 0.55);
+
+    for (final home in homes) {
+      final centre = toScreen(home);
+      c.drawRect(
+        Rect.fromCenter(center: centre, width: 7, height: 7),
+        paint,
+      );
+    }
+  }
+
   void _paintSchool(Canvas c, Offset centre) {
     final rect = Rect.fromCenter(center: centre, width: 26, height: 26);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(7));
@@ -302,6 +329,9 @@ class _SchematicPainter extends CustomPainter {
     for (final point in path.points) {
       include(point);
     }
+    for (final home in homes) {
+      include(home);
+    }
     if (showSchool) include(school);
 
     // Degenerate bounds (a single point) would divide by zero when projecting.
@@ -345,6 +375,7 @@ class _SchematicPainter extends CustomPainter {
       old.busPosition?.isStale != busPosition?.isStale ||
       old.path != path ||
       old.stops != stops ||
+      old.homes != homes ||
       old.canvas != canvas;
 }
 

@@ -3,6 +3,11 @@
         android:label="safe_path"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Supplied by the Gradle placeholder below. An empty key still
+             builds and runs; the app falls back to its own map renderer. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
