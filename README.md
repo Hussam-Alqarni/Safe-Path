@@ -22,7 +22,10 @@ flutter run
 No API key, no backend, no hardware. The app starts in **demo mode**: a
 simulated fleet, a built-in map renderer, and a complete Jeddah school.
 
-للتشغيل الحقيقي · For a live deployment, see [`docs/SETUP.md`](docs/SETUP.md).
+دليل التشغيل خطوة بخطوة على اللابتوب · Step-by-step on a laptop:
+[`docs/RUN.md`](docs/RUN.md)
+
+للتشغيل الحقيقي · For a live deployment: [`docs/SETUP.md`](docs/SETUP.md).
 
 ---
 
