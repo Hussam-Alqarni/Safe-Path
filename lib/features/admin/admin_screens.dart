@@ -9,6 +9,7 @@ import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
 import 'package:safe_path/features/map/bus_position_animator.dart';
 import 'package:safe_path/features/map/map_view.dart';
+import 'package:safe_path/features/students/student_detail_sheet.dart';
 import 'package:safe_path/shared/widgets/common.dart';
 
 /// The administrator's landing screen.
@@ -86,7 +87,9 @@ class AdminOverviewScreen extends ConsumerWidget {
                 icon: Icons.edit_note_rounded,
                 accent: tally.manualRate > 0.2 ? c.manual : null,
                 caption: tally.manualRate > 0.2
-                    ? (s.isArabic ? 'مرتفعة — افحص القارئ' : 'High — check the reader')
+                    ? (s.isArabic
+                        ? 'مرتفعة — افحص القارئ'
+                        : 'High — check the reader')
                     : null,
               ),
             ),
@@ -294,7 +297,7 @@ class _AdminRosterScreenState extends ConsumerState<AdminRosterScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
-    final matches = SeedData.students.where((student) {
+    final matches = ref.watch(studentsProvider).where((student) {
       if (_query.isEmpty) return true;
       final needle = _query.toLowerCase();
       return student.fullNameAr.contains(_query) ||
@@ -326,7 +329,10 @@ class _AdminRosterScreenState extends ConsumerState<AdminRosterScreen> {
         ),
         Expanded(
           child: matches.isEmpty
-              ? EmptyState(message: s.adminNoResults, icon: Icons.search_off_rounded)
+              ? EmptyState(
+                  message: s.adminNoResults,
+                  icon: Icons.search_off_rounded,
+                )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(Gap.lg, 0, Gap.lg, Gap.lg),
                   itemCount: matches.length,
@@ -352,50 +358,58 @@ class StudentRosterRow extends ConsumerWidget {
     final c = context.colors;
     final snapshot = ref.watch(studentSnapshotProvider(student.id));
     final style = stageStyle(context, snapshot.stage);
-    final stop = student.stopId == null
-        ? null
-        : SeedData.stopsById[student.stopId];
+    final stop =
+        student.stopId == null ? null : SeedData.stopsById[student.stopId];
 
     return Container(
       margin: const EdgeInsets.only(bottom: Gap.sm),
-      padding: const EdgeInsets.all(Gap.md),
       decoration: BoxDecoration(
         color: c.surface,
         border: Border.all(color: c.line),
         borderRadius: BorderRadius.circular(Radii.md),
       ),
-      child: Row(
-        children: [
-          InitialsAvatar(initials: student.photoInitials, color: style.fg),
-          const SizedBox(width: Gap.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  s.isArabic ? student.fullNameAr : student.fullNameEn,
-                  style: Theme.of(context).textTheme.bodyLarge,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => showStudentDetail(context, ref, student.id),
+        child: Padding(
+          padding: const EdgeInsets.all(Gap.md),
+          child: Row(
+            children: [
+              InitialsAvatar(initials: student.photoInitials, color: style.fg),
+              const SizedBox(width: Gap.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.isArabic ? student.fullNameAr : student.fullNameEn,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    Text(
+                      [
+                        '${s.grade} ${student.grade}${student.section}',
+                        if (stop != null)
+                          s.isArabic ? stop.nameAr : stop.nameEn,
+                        if (!student.usesBus)
+                          s.isArabic ? 'بدون حافلة' : 'No bus',
+                        if (!student.hasHome && student.usesBus)
+                          s.isArabic ? 'بلا موقع منزل' : 'no home set',
+                      ].join(' · '),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ),
-                Text(
-                  [
-                    '${s.grade} ${student.grade}${student.section}',
-                    if (stop != null) s.isArabic ? stop.nameAr : stop.nameEn,
-                    if (!student.usesBus)
-                      s.isArabic ? 'بدون حافلة' : 'No bus',
-                  ].join(' · '),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+              ),
+              StatusPill(
+                label: s.stageLabel(snapshot.stage),
+                foreground: style.fg,
+                background: style.bg,
+                icon: style.icon,
+                dense: true,
+              ),
+            ],
           ),
-          StatusPill(
-            label: s.stageLabel(snapshot.stage),
-            foreground: style.fg,
-            background: style.bg,
-            icon: style.icon,
-            dense: true,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -466,9 +480,9 @@ class _AlertCard extends ConsumerWidget {
                 Text(
                   formatClock(alert.raisedAt),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: style.fg,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                    color: style.fg,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ],
             ),

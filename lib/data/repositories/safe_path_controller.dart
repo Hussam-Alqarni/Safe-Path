@@ -52,6 +52,7 @@ class SafePathController extends StateNotifier<AppState> {
   static AppState _initialState(AppConfig config) => AppState(
         config: config,
         school: SeedData.school,
+        students: SeedData.students,
         trips: const [],
         attendanceEvents: const [],
         absences: const [],
@@ -88,7 +89,7 @@ class SafePathController extends StateNotifier<AppState> {
           tripId: 'trip-${route.id}',
           route: route,
           stopsById: SeedData.stopsById,
-          students: SeedData.students,
+          students: state.students,
           absences: state.absences,
           schoolLocation: SeedData.school.location,
           serviceDate: serviceDate,
@@ -163,7 +164,7 @@ class SafePathController extends StateNotifier<AppState> {
     final raised = _journey.reconcileTripCompletion(
       trip: completed,
       allEvents: state.attendanceEvents,
-      studentsById: SeedData.studentsById,
+      studentsById: state.studentsById,
       now: now,
       idFactory: _id,
     );
@@ -462,6 +463,97 @@ class SafePathController extends StateNotifier<AppState> {
     return inside;
   }
 
+  // ── student records ──────────────────────────────────────────────────────
+
+  /// Records where a student lives, from a link a guardian shared.
+  ///
+  /// Audited because a home address is the most sensitive field in the
+  /// system: who set it, and from which link, has to be answerable later.
+  void setStudentHome({
+    required String studentId,
+    required LatLngPoint location,
+    String? label,
+    String? linkSource,
+  }) {
+    final student = state.studentsById[studentId];
+    if (student == null) return;
+
+    state = state.copyWith(
+      students: state.students
+          .map(
+            (s) => s.id == studentId
+                ? s.copyWith(
+                    homeLocation: location,
+                    homeLabel: label,
+                    homeLinkSource: linkSource,
+                  )
+                : s,
+          )
+          .toList(),
+    );
+
+    recordAudit(
+      action: 'student.home.set',
+      subjectStudentId: studentId,
+      detail: linkSource ?? 'manual',
+    );
+  }
+
+  /// Reassigns a student to a different pickup point and replans any trip
+  /// that has not yet served either stop.
+  Future<void> assignStudentToStop({
+    required String studentId,
+    required String stopId,
+  }) async {
+    final student = state.studentsById[studentId];
+    if (student == null || student.stopId == stopId) return;
+
+    final previousStopId = student.stopId;
+    state = state.copyWith(
+      students: state.students
+          .map((s) => s.id == studentId ? s.copyWith(stopId: stopId) : s)
+          .toList(),
+    );
+
+    recordAudit(
+      action: 'student.stop.assign',
+      subjectStudentId: studentId,
+      detail: '${previousStopId ?? 'none'} -> $stopId',
+    );
+
+    await _rebuildScheduledTrips();
+  }
+
+  /// Rebuilds every trip that has not started, so a roster change is reflected
+  /// before departure rather than at the next launch.
+  Future<void> _rebuildScheduledTrips() async {
+    final rebuilt = <Trip>[];
+    for (final trip in state.trips) {
+      if (trip.status != TripStatus.scheduled) {
+        rebuilt.add(trip);
+        continue;
+      }
+      final route =
+          SeedData.routes.where((r) => r.id == trip.routeId).firstOrNull;
+      if (route == null) {
+        rebuilt.add(trip);
+        continue;
+      }
+      rebuilt.add(
+        await _planner.buildTrip(
+          tripId: trip.id,
+          route: route,
+          stopsById: SeedData.stopsById,
+          students: state.students,
+          absences: state.absences,
+          schoolLocation: state.school.location,
+          serviceDate: trip.serviceDate,
+        ),
+      );
+    }
+    state = state.copyWith(trips: rebuilt);
+  }
+
   // ── absences and replanning ──────────────────────────────────────────────
 
   /// A guardian declares an absence. Any trip still to run is replanned.
@@ -515,7 +607,7 @@ class SafePathController extends StateNotifier<AppState> {
     String studentId, {
     required bool absent,
   }) async {
-    final student = SeedData.studentsById[studentId];
+    final student = state.studentsById[studentId];
     final stopId = student?.stopId;
     if (stopId == null) return;
 
@@ -532,7 +624,8 @@ class SafePathController extends StateNotifier<AppState> {
         continue;
       }
 
-      final remaining = SeedData.studentsForStop(stopId)
+      final remaining = state
+          .studentsForStop(stopId)
           .map((s) => s.id)
           .where(
             (id) => absent
@@ -790,7 +883,7 @@ class SafePathController extends StateNotifier<AppState> {
     String? attendanceEventId,
     bool requiresConfirmation = false,
   }) {
-    final student = SeedData.studentsById[studentId];
+    final student = state.studentsById[studentId];
     if (student == null) return;
 
     // The demo guardian shares children with the per-student accounts, so both
@@ -826,7 +919,7 @@ class SafePathController extends StateNotifier<AppState> {
   // ── lookups ──────────────────────────────────────────────────────────────
 
   Student? _studentForCard(String cardUid) {
-    for (final student in SeedData.students) {
+    for (final student in state.students) {
       if (student.cardUid == cardUid) return student;
     }
     return null;
@@ -838,9 +931,8 @@ class SafePathController extends StateNotifier<AppState> {
     );
   }
 
-  String _studentName(String id) => SeedData.studentsById[id]?.fullNameAr ?? id;
-  String _studentNameEn(String id) =>
-      SeedData.studentsById[id]?.fullNameEn ?? id;
+  String _studentName(String id) => state.studentsById[id]?.fullNameAr ?? id;
+  String _studentNameEn(String id) => state.studentsById[id]?.fullNameEn ?? id;
   String _userName(String? id) =>
       id == null ? 'السائق' : SeedData.usersById[id]?.fullNameAr ?? 'السائق';
   String _userNameEn(String? id) => id == null

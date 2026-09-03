@@ -141,6 +141,9 @@ class Student {
     this.stopId,
     this.usesBus = true,
     this.photoInitials = '',
+    this.homeLocation,
+    this.homeLabel,
+    this.homeLinkSource,
   });
 
   final String id;
@@ -161,6 +164,54 @@ class Student {
 
   final bool usesBus;
   final String photoInitials;
+
+  /// Where the student actually lives.
+  ///
+  /// Distinct from the stop: several homes share one pickup point, and the
+  /// walk between them is exactly what a guardian needs to judge when to send
+  /// their child down. Set from a shared map link rather than typed.
+  final LatLngPoint? homeLocation;
+
+  /// Place name carried by the link, when it had one.
+  final String? homeLabel;
+
+  /// The original pasted link, kept so a wrong pin can be traced to what was
+  /// actually shared rather than argued about.
+  final String? homeLinkSource;
+
+  bool get hasHome => homeLocation != null;
+
+  /// Metres from the front door to the pickup point.
+  double? walkToStopMetres(BusStop? stop) {
+    final home = homeLocation;
+    if (home == null || stop == null) return null;
+    return home.distanceTo(stop.location);
+  }
+
+  Student copyWith({
+    String? stopId,
+    bool? usesBus,
+    LatLngPoint? homeLocation,
+    String? homeLabel,
+    String? homeLinkSource,
+  }) {
+    return Student(
+      id: id,
+      schoolId: schoolId,
+      fullNameAr: fullNameAr,
+      fullNameEn: fullNameEn,
+      grade: grade,
+      section: section,
+      guardianIds: guardianIds,
+      cardUid: cardUid,
+      stopId: stopId ?? this.stopId,
+      usesBus: usesBus ?? this.usesBus,
+      photoInitials: photoInitials,
+      homeLocation: homeLocation ?? this.homeLocation,
+      homeLabel: homeLabel ?? this.homeLabel,
+      homeLinkSource: homeLinkSource ?? this.homeLinkSource,
+    );
+  }
 }
 
 /// A named, ordered sequence of stops served by one bus.

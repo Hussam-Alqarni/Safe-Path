@@ -4,7 +4,6 @@ import 'package:safe_path/core/i18n/strings.dart';
 import 'package:safe_path/core/theme/app_colors.dart';
 import 'package:safe_path/core/theme/app_theme.dart';
 import 'package:safe_path/data/repositories/providers.dart';
-import 'package:safe_path/data/seed/seed_data.dart';
 import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
 import 'package:safe_path/features/admin/admin_screens.dart';
@@ -26,7 +25,7 @@ class StaffGateScreen extends ConsumerWidget {
 
     final inside = <Student>[];
     final outside = <Student>[];
-    for (final student in SeedData.students) {
+    for (final student in state.students) {
       final events = state.attendanceEvents.where(
         (e) => e.studentId == student.id && e.type.isGateEvent,
       );
@@ -132,6 +131,7 @@ class _ReaderPanel extends ConsumerWidget {
 
   Future<void> _pickStudent(BuildContext context, WidgetRef ref) async {
     final s = AppStrings.of(context);
+    final students = ref.read(studentsProvider);
     final student = await showModalBottomSheet<Student>(
       context: context,
       showDragHandle: true,
@@ -144,9 +144,9 @@ class _ReaderPanel extends ConsumerWidget {
           builder: (_, scrollController) => ListView.builder(
             controller: scrollController,
             padding: const EdgeInsets.fromLTRB(Gap.lg, 0, Gap.lg, Gap.lg),
-            itemCount: SeedData.students.length,
+            itemCount: students.length,
             itemBuilder: (_, i) {
-              final student = SeedData.students[i];
+              final student = students[i];
               return ListTile(
                 leading: InitialsAvatar(
                   initials: student.photoInitials,
@@ -235,7 +235,7 @@ class StaffRosterScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(Gap.lg),
       children: [
-        for (final student in SeedData.students)
+        for (final student in ref.watch(studentsProvider))
           StudentRosterRow(student: student),
       ],
     );

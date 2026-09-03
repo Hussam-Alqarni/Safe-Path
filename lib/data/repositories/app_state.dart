@@ -65,9 +65,10 @@ class ImpersonationSession {
 
 /// The whole application state, in one immutable value.
 class AppState {
-  const AppState({
+  AppState({
     required this.config,
     required this.school,
+    required this.students,
     required this.trips,
     required this.attendanceEvents,
     required this.absences,
@@ -80,10 +81,18 @@ class AppState {
     required this.themeMode,
     this.impersonation,
     this.simulationRunning = false,
-  });
+  }) : studentsById = {for (final s in students) s.id: s};
 
   final AppConfig config;
   final School school;
+
+  /// The roster. Editable, unlike the seed it starts from — a home location
+  /// set by an administrator has to live somewhere the app can change.
+  final List<Student> students;
+
+  /// Built once per state rather than on every lookup; screens read it inside
+  /// build methods that run on every frame.
+  final Map<String, Student> studentsById;
   final List<Trip> trips;
   final List<AttendanceEvent> attendanceEvents;
   final List<AbsenceRecord> absences;
@@ -147,7 +156,11 @@ class AppState {
     return null;
   }
 
+  List<Student> studentsForStop(String stopId) =>
+      students.where((s) => s.stopId == stopId).toList();
+
   AppState copyWith({
+    List<Student>? students,
     List<Trip>? trips,
     List<AttendanceEvent>? attendanceEvents,
     List<AbsenceRecord>? absences,
@@ -165,6 +178,7 @@ class AppState {
     return AppState(
       config: config,
       school: school,
+      students: students ?? this.students,
       trips: trips ?? this.trips,
       attendanceEvents: attendanceEvents ?? this.attendanceEvents,
       absences: absences ?? this.absences,

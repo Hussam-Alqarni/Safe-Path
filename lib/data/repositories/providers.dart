@@ -2,10 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safe_path/core/config/app_config.dart';
 import 'package:safe_path/data/repositories/app_state.dart';
 import 'package:safe_path/data/repositories/safe_path_controller.dart';
-import 'package:safe_path/data/seed/seed_data.dart';
+import 'package:safe_path/data/services/http_short_link_resolver.dart';
 import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
 import 'package:safe_path/domain/services/journey_engine.dart';
+import 'package:safe_path/domain/services/location_link_parser.dart';
 
 /// Overridden in main() so the same widget tree can run against a demo
 /// configuration or a live one without any screen knowing the difference.
@@ -23,6 +24,23 @@ final controllerProvider =
 /// The role whose screens are showing — impersonation aware.
 final effectiveRoleProvider = Provider<UserRole>(
   (ref) => ref.watch(controllerProvider).effectiveRole,
+);
+
+/// Configured with the school's position so an implausible pin is flagged
+/// rather than silently accepted.
+final linkParserProvider = Provider<LocationLinkParser>((ref) {
+  final school = ref.watch(controllerProvider).school;
+  return LocationLinkParser(expectedCentre: school.location);
+});
+
+final shortLinkResolverProvider = Provider<ShortLinkResolver>((ref) {
+  final resolver = HttpShortLinkResolver();
+  ref.onDispose(resolver.close);
+  return resolver;
+});
+
+final studentsProvider = Provider<List<Student>>(
+  (ref) => ref.watch(controllerProvider).students,
 );
 
 final openAlertsProvider = Provider<List<SafetyAlert>>(
@@ -49,7 +67,7 @@ final studentSnapshotProvider =
 final myChildrenProvider = Provider<List<Student>>((ref) {
   final state = ref.watch(controllerProvider);
   final ids = state.currentUser.linkedStudentIds;
-  return SeedData.students.where((s) => ids.contains(s.id)).toList();
+  return state.students.where((s) => ids.contains(s.id)).toList();
 });
 
 final myNotificationsProvider = Provider<List<AppNotification>>((ref) {
@@ -71,7 +89,7 @@ final schoolTallyProvider = Provider<SchoolTally>((ref) {
   var absent = 0;
   var home = 0;
 
-  for (final student in SeedData.students) {
+  for (final student in state.students) {
     final snapshot = engine.snapshotFor(
       studentId: student.id,
       allEvents: state.attendanceEvents,
@@ -97,7 +115,7 @@ final schoolTallyProvider = Provider<SchoolTally>((ref) {
   }
 
   return SchoolTally(
-    total: SeedData.students.length,
+    total: state.students.length,
     onBus: onBus,
     atSchool: atSchool,
     absent: absent,

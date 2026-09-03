@@ -162,7 +162,7 @@ class DeveloperControlsScreen extends ConsumerWidget {
 
     final studentId = onBoard.first;
     fleet.leaveStudentOnBoard(studentId);
-    final name = SeedData.studentsById[studentId];
+    final name = state.studentsById[studentId];
 
     messenger.showSnackBar(
       SnackBar(
@@ -244,8 +244,9 @@ class DeveloperEventLogScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
     final c = context.colors;
-    final events = ref.watch(controllerProvider).attendanceEvents.reversed
-        .toList();
+    final state = ref.watch(controllerProvider);
+    final students = state.studentsById;
+    final events = state.attendanceEvents.reversed.toList();
 
     if (events.isEmpty) {
       return EmptyState(message: s.noData, icon: Icons.receipt_long_rounded);
@@ -256,7 +257,7 @@ class DeveloperEventLogScreen extends ConsumerWidget {
       itemCount: events.length,
       itemBuilder: (context, i) {
         final event = events[i];
-        final student = SeedData.studentsById[event.studentId];
+        final student = students[event.studentId];
         return Container(
           margin: const EdgeInsets.only(bottom: Gap.sm),
           padding: const EdgeInsets.all(Gap.md),

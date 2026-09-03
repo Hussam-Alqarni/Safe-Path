@@ -265,7 +265,7 @@ class _StudentActionRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
     final c = context.colors;
-    final student = SeedData.studentsById[studentId];
+    final student = ref.watch(controllerProvider).studentsById[studentId];
     final snapshot = ref.watch(studentSnapshotProvider(studentId));
     if (student == null) return const SizedBox.shrink();
 
@@ -471,7 +471,7 @@ class _ManifestRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
     final c = context.colors;
-    final student = SeedData.studentsById[studentId];
+    final student = ref.watch(controllerProvider).studentsById[studentId];
     final snapshot = ref.watch(studentSnapshotProvider(studentId));
     if (student == null) return const SizedBox.shrink();
 

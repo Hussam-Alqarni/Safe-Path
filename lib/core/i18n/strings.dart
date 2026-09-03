@@ -129,6 +129,25 @@ abstract class AppStrings {
   String get adminNoResults;
 
   // ── gate ─────────────────────────────────────────────────────────────────
+  // ── home location ────────────────────────────────────────────────────────
+  String get homeLocation;
+  String get setHomeFromLink;
+  String get changeHome;
+  String get pasteMapLinkTitle;
+  String get pasteMapLinkHint;
+  String get pasteMapLinkExplain;
+  String get linkReading;
+  String get linkNotRecognised;
+  String get linkOutOfRange;
+  String get linkFarFromSchool;
+  String get linkPreview;
+  String get homeSaved;
+  String get walkToStop;
+  String get noHomeSet;
+  String get nearestStop;
+  String get assignToStop;
+  String get coordinates;
+
   String get legendServed;
   String get legendUpcoming;
   String get legendSkipped;
@@ -391,6 +410,45 @@ class ArabicStrings extends AppStrings {
   String get adminSearchStudents => 'ابحث باسم الطالب أو الصف';
   @override
   String get adminNoResults => 'لا نتائج';
+
+  @override
+  String get homeLocation => 'موقع المنزل';
+  @override
+  String get setHomeFromLink => 'تحديد الموقع برابط';
+  @override
+  String get changeHome => 'تغيير الموقع';
+  @override
+  String get pasteMapLinkTitle => 'الصق رابط الموقع';
+  @override
+  String get pasteMapLinkHint => 'https://maps.app.goo.gl/...';
+  @override
+  String get pasteMapLinkExplain =>
+      'شارك موقع المنزل من خرائط جوجل أو واتساب، ثم الصق الرابط هنا. '
+      'يُقبل أيضاً لصق الإحداثيات مباشرة.';
+  @override
+  String get linkReading => 'جارٍ قراءة الرابط…';
+  @override
+  String get linkNotRecognised =>
+      'لم نتمكّن من قراءة موقع من هذا الرابط. تأكد أنه رابط موقع من خرائط جوجل.';
+  @override
+  String get linkOutOfRange => 'الإحداثيات في هذا الرابط غير صالحة.';
+  @override
+  String get linkFarFromSchool =>
+      'هذا الموقع بعيد جداً عن المدرسة. تحقق قبل الحفظ — غالباً انعكس ترتيب خط الطول والعرض.';
+  @override
+  String get linkPreview => 'الموقع المقروء';
+  @override
+  String get homeSaved => 'حُفظ موقع المنزل';
+  @override
+  String get walkToStop => 'المسافة إلى المحطة';
+  @override
+  String get noHomeSet => 'لم يُحدَّد موقع المنزل بعد';
+  @override
+  String get nearestStop => 'أقرب محطة';
+  @override
+  String get assignToStop => 'إسناد لهذه المحطة';
+  @override
+  String get coordinates => 'الإحداثيات';
 
   @override
   String get legendServed => 'تمت';
@@ -722,6 +780,47 @@ class EnglishStrings extends AppStrings {
   String get adminSearchStudents => 'Search by name or grade';
   @override
   String get adminNoResults => 'No results';
+
+  @override
+  String get homeLocation => 'Home location';
+  @override
+  String get setHomeFromLink => 'Set from a map link';
+  @override
+  String get changeHome => 'Change location';
+  @override
+  String get pasteMapLinkTitle => 'Paste a location link';
+  @override
+  String get pasteMapLinkHint => 'https://maps.app.goo.gl/...';
+  @override
+  String get pasteMapLinkExplain =>
+      'Share the home location from Google Maps or WhatsApp, then paste the '
+      'link here. Plain coordinates work too.';
+  @override
+  String get linkReading => 'Reading the link…';
+  @override
+  String get linkNotRecognised =>
+      'No location could be read from that link. Check that it is a Google '
+      'Maps location link.';
+  @override
+  String get linkOutOfRange => 'The coordinates in that link are not valid.';
+  @override
+  String get linkFarFromSchool =>
+      'This location is a long way from the school. Check before saving — '
+      'latitude and longitude are usually the wrong way round.';
+  @override
+  String get linkPreview => 'Location found';
+  @override
+  String get homeSaved => 'Home location saved';
+  @override
+  String get walkToStop => 'Walk to the stop';
+  @override
+  String get noHomeSet => 'No home location set yet';
+  @override
+  String get nearestStop => 'Nearest stop';
+  @override
+  String get assignToStop => 'Assign to this stop';
+  @override
+  String get coordinates => 'Coordinates';
 
   @override
   String get legendServed => 'Served';

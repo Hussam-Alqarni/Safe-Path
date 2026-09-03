@@ -21,6 +21,9 @@ dependencies:
   # Maps — Google Maps is the production renderer.
   google_maps_flutter: ^2.10.0
 
+  # Expands shortened map links a guardian pastes.
+  http: ^1.2.2
+
   # Utilities
   intl: any
   collection: ^1.19.0
