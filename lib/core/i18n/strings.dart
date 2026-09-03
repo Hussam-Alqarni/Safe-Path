@@ -43,6 +43,22 @@ abstract class AppStrings {
         UserRole.developer => roleDeveloper,
       };
 
+  // ── dashboard ────────────────────────────────────────────────────────────
+  String get dashAttendanceTrend;
+  String get dashAttendanceTrendNote;
+  String get dashDriverReliability;
+  String get dashDriverReliabilityNote;
+  String get dashPunctuality;
+  String get dashPunctualityNote;
+  String get dashDataGaps;
+  String get dashDataGapsNote;
+  String get dashNoGaps;
+  String get dashTarget;
+  String get dashOnTime;
+  String get dashLate;
+  String get dashEarly;
+  String get dashFixNow;
+
   // ── navigation ───────────────────────────────────────────────────────────
   String get navLive;
   String get navChildren;
@@ -421,6 +437,36 @@ class ArabicStrings extends AppStrings {
   String get adminSearchStudents => 'ابحث باسم الطالب أو الصف';
   @override
   String get adminNoResults => 'لا نتائج';
+
+  @override
+  String get dashAttendanceTrend => 'نسبة الحضور — آخر ١٠ أيام';
+  @override
+  String get dashAttendanceTrendNote => 'من إجمالي طلاب الحافلات';
+  @override
+  String get dashDriverReliability => 'التحضير اليدوي حسب السائق';
+  @override
+  String get dashDriverReliabilityNote =>
+      'ارتفاع النسبة لسائق واحد يعني غالباً قارئاً معطّلاً';
+  @override
+  String get dashPunctuality => 'الالتزام بالمواعيد حسب المسار';
+  @override
+  String get dashPunctualityNote => 'متوسط الفارق عن الوقت المخطّط';
+  @override
+  String get dashDataGaps => 'نواقص البيانات';
+  @override
+  String get dashDataGapsNote => 'طلاب بلا موقع منزل مسجّل';
+  @override
+  String get dashNoGaps => 'لا نواقص — كل الطلاب لديهم موقع';
+  @override
+  String get dashTarget => 'المستهدف';
+  @override
+  String get dashOnTime => 'في الموعد';
+  @override
+  String get dashLate => 'متأخر';
+  @override
+  String get dashEarly => 'مبكر';
+  @override
+  String get dashFixNow => 'استكمال';
 
   @override
   String get navigate => 'الملاحة';
@@ -823,6 +869,36 @@ class EnglishStrings extends AppStrings {
   String get adminSearchStudents => 'Search by name or grade';
   @override
   String get adminNoResults => 'No results';
+
+  @override
+  String get dashAttendanceTrend => 'Attendance rate — last 10 days';
+  @override
+  String get dashAttendanceTrendNote => 'of all bus riders';
+  @override
+  String get dashDriverReliability => 'Manual entry by driver';
+  @override
+  String get dashDriverReliabilityNote =>
+      'A rate climbing for one driver usually means a failing reader';
+  @override
+  String get dashPunctuality => 'Punctuality by route';
+  @override
+  String get dashPunctualityNote => 'Average difference from the plan';
+  @override
+  String get dashDataGaps => 'Data gaps';
+  @override
+  String get dashDataGapsNote => 'Students with no home location recorded';
+  @override
+  String get dashNoGaps => 'No gaps — every student has a location';
+  @override
+  String get dashTarget => 'Target';
+  @override
+  String get dashOnTime => 'on time';
+  @override
+  String get dashLate => 'late';
+  @override
+  String get dashEarly => 'early';
+  @override
+  String get dashFixNow => 'Complete';
 
   @override
   String get navigate => 'Navigate';

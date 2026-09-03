@@ -286,6 +286,27 @@ abstract final class SeedData {
     ),
   ];
 
+  /// Ten prior school days, for the trend on the dashboard.
+  ///
+  /// Explicitly demo history: the live day is computed from the event log, but
+  /// a trend needs a past, and the app has only ever run once. Named so nobody
+  /// mistakes it for recorded data — the demo banner says the same thing.
+  static final demoAttendanceHistory = <({
+    DateTime date,
+    int expected,
+    int present,
+    int manual,
+  })>[
+    for (var i = 0; i < 10; i++)
+      (
+        date: DateTime(2026, 8, 24).add(Duration(days: i)),
+        expected: 24,
+        // A plausible week: a dip mid-week, a stronger Thursday.
+        present: const [22, 23, 21, 24, 23, 20, 23, 24, 22, 23][i],
+        manual: const [1, 0, 3, 0, 1, 4, 1, 0, 2, 1][i],
+      ),
+  ];
+
   static Map<String, BusStop> get stopsById => {for (final s in stops) s.id: s};
 
   static Map<String, Student> get studentsById =>

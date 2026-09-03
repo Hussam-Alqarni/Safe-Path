@@ -38,6 +38,8 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.criticalSurface,
     required this.routeLine,
     required this.routeLineDone,
+    required this.chartAccent,
+    required this.chartGrid,
   });
 
   final Color brand;
@@ -81,6 +83,17 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color routeLine;
   final Color routeLineDone;
 
+  /// The single-series chart colour.
+  ///
+  /// A separate step from [brand] because a chart mark and a button have
+  /// different jobs: each mode's value was checked against that mode's chart
+  /// surface for lightness band and contrast, and the dark step is chosen,
+  /// not derived by flipping the light one.
+  final Color chartAccent;
+
+  /// Grid and axis lines. Recessive by design — the data is the subject.
+  final Color chartGrid;
+
   static const light = AppColors(
     brand: Color(0xFF0D6B75),
     brandMuted: Color(0xFF4C9199),
@@ -108,6 +121,8 @@ class AppColors extends ThemeExtension<AppColors> {
     criticalSurface: Color(0xFFF7E4E1),
     routeLine: Color(0xFF0D6B75),
     routeLineDone: Color(0xFFB4C3C2),
+    chartAccent: Color(0xFF0D6B75),
+    chartGrid: Color(0xFFE3E9E8),
   );
 
   static const dark = AppColors(
@@ -137,6 +152,8 @@ class AppColors extends ThemeExtension<AppColors> {
     criticalSurface: Color(0xFF3A1E1A),
     routeLine: Color(0xFF4FB6BF),
     routeLineDone: Color(0xFF315055),
+    chartAccent: Color(0xFF43A3AC),
+    chartGrid: Color(0xFF233A3F),
   );
 
   @override

@@ -55,9 +55,20 @@ class LocalGeometryRoutingService implements RoutingService {
 
 /// Builds trips and rebuilds them when the plan changes mid-run.
 class RoutePlanner {
-  const RoutePlanner(this.routingService);
+  const RoutePlanner(
+    this.routingService, {
+    this.plannedSpeedKmh = 30,
+    this.dwellSeconds = 45,
+  });
 
   final RoutingService routingService;
+
+  /// The speed the published timetable assumes. Punctuality is measured
+  /// against this, so it has to be a number the school agreed to rather than
+  /// whatever the bus happened to do.
+  final double plannedSpeedKmh;
+
+  final int dwellSeconds;
 
   /// Builds today's trip from a route, dropping stops where every assigned
   /// student is absent.
@@ -120,9 +131,32 @@ class RoutePlanner {
       direction: route.direction,
       serviceDate: serviceDate,
       status: TripStatus.scheduled,
-      stops: _withDistances(tripStops, stopsById, path),
+      stops: _withSchedule(
+        _withDistances(tripStops, stopsById, path),
+        route.departureTime.onDate(serviceDate),
+      ),
       path: path,
     );
+  }
+
+  /// Fills in the timetable each stop will be judged against.
+  ///
+  /// Without a planned arrival there is nothing to be late against, and
+  /// "the bus was late" stays an argument rather than a measurement.
+  List<TripStop> _withSchedule(List<TripStop> stops, DateTime departure) {
+    final metresPerSecond = plannedSpeedKmh * 1000 / 3600;
+    var servedSoFar = 0;
+
+    return stops.map((stop) {
+      if (stop.status == TripStopStatus.skipped) return stop;
+      final travelSeconds =
+          (stop.distanceAlongRouteMetres / metresPerSecond).round();
+      final planned = departure.add(
+        Duration(seconds: travelSeconds + servedSoFar * dwellSeconds),
+      );
+      servedSoFar++;
+      return stop.copyWith(plannedArrival: planned);
+    }).toList();
   }
 
   /// Skips a stop on a trip already under way and redraws what remains.

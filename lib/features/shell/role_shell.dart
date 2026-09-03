@@ -6,6 +6,7 @@ import 'package:safe_path/core/theme/app_theme.dart';
 import 'package:safe_path/data/repositories/providers.dart';
 import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/features/admin/admin_screens.dart';
+import 'package:safe_path/features/admin/dashboard_screen.dart';
 import 'package:safe_path/features/developer/developer_screens.dart';
 import 'package:safe_path/features/driver/driver_screens.dart';
 import 'package:safe_path/features/parent/parent_screens.dart';
@@ -173,7 +174,7 @@ class _RoleShellState extends ConsumerState<RoleShell> {
             label: s.adminOverview,
             icon: Icons.dashboard_outlined,
             selectedIcon: Icons.dashboard_rounded,
-            builder: (_) => const AdminOverviewScreen(),
+            builder: (_) => const AdminDashboardScreen(),
           ),
           ShellDestination(
             label: s.navFleet,
