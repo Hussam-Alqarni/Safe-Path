@@ -83,6 +83,11 @@ abstract class AppStrings {
 
   // ── alerts ───────────────────────────────────────────────────────────────
   String alertKindLabel(SafetyAlertKind kind);
+  String get emergencyButton;
+  String get emergencyHold;
+  String get emergencyRaised;
+  String get emergencyTitle;
+  String emergencyBody(String plate);
   String get alertsNone;
   String get alertAcknowledge;
   String get alertAcknowledged;
@@ -318,12 +323,25 @@ class ArabicStrings extends AppStrings {
 
   @override
   String alertKindLabel(SafetyAlertKind kind) => switch (kind) {
+        SafetyAlertKind.emergency => 'استغاثة من السائق',
         SafetyAlertKind.leftOnBus => 'طالب لم يسجّل نزوله',
         SafetyAlertKind.missingGateEntry => 'نزل ولم يدخل المدرسة',
         SafetyAlertKind.leftSchoolNotOnBus => 'خرج ولم يركب الحافلة',
         SafetyAlertKind.trackerSilent => 'انقطعت إشارة الحافلة',
         SafetyAlertKind.highManualRate => 'نسبة تحضير يدوي مرتفعة',
       };
+
+  @override
+  String get emergencyButton => 'استغاثة';
+  @override
+  String get emergencyHold => 'استمر بالضغط ثانيتين';
+  @override
+  String get emergencyRaised => 'أُرسلت الاستغاثة للإدارة وأولياء الأمور';
+  @override
+  String get emergencyTitle => 'استغاثة من الحافلة';
+  @override
+  String emergencyBody(String plate) =>
+      'ضغط سائق الحافلة $plate زر الاستغاثة. الإدارة أُبلغت وتتابع الموقف.';
 
   @override
   String get alertsNone => 'لا توجد تنبيهات مفتوحة';
@@ -748,12 +766,26 @@ class EnglishStrings extends AppStrings {
 
   @override
   String alertKindLabel(SafetyAlertKind kind) => switch (kind) {
+        SafetyAlertKind.emergency => 'Driver raised an emergency',
         SafetyAlertKind.leftOnBus => 'Never scanned off the bus',
         SafetyAlertKind.missingGateEntry => 'Off the bus, not through the gate',
         SafetyAlertKind.leftSchoolNotOnBus => 'Left school, not on a bus',
         SafetyAlertKind.trackerSilent => 'Bus signal lost',
         SafetyAlertKind.highManualRate => 'High manual-entry rate',
       };
+
+  @override
+  String get emergencyButton => 'Emergency';
+  @override
+  String get emergencyHold => 'Hold for two seconds';
+  @override
+  String get emergencyRaised => 'Emergency sent to the school and guardians';
+  @override
+  String get emergencyTitle => 'Emergency on the bus';
+  @override
+  String emergencyBody(String plate) =>
+      'The driver of bus $plate raised an emergency. The school has been '
+      'notified and is handling it.';
 
   @override
   String get alertsNone => 'No open alerts';
@@ -930,7 +962,9 @@ class EnglishStrings extends AppStrings {
 
   @override
   String maneuverToStop(Maneuver maneuver, String stopName) =>
-      maneuver == Maneuver.arriveStop ? 'Stop: \$stopName' : maneuverLabel(maneuver);
+      maneuver == Maneuver.arriveStop
+          ? 'Stop: $stopName'
+          : maneuverLabel(maneuver);
 
   @override
   String get homeLocation => 'Home location';

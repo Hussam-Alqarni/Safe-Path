@@ -5,7 +5,7 @@ School transport safety platform. Arabic-first, bilingual (ar/en), RTL.
 ## Commands
 
 ```bash
-flutter test          # 107 tests — keep them green
+flutter test          # 175 tests — keep them green
 dart analyze          # must stay clean; the repo has no warnings
 dart format lib test
 flutter run           # demo mode: no key, no backend, no hardware
@@ -36,6 +36,8 @@ product unsafe or unauditable.
 6. **Every privileged access is audited.** Impersonation is time-boxed and never
    changes `currentUser`.
 7. **`schoolId` on every record.** The pilot is one school; the schema is not.
+8. **An emergency reaches only guardians whose child is aboard.** Alarming a
+   parent whose child already got off is a cruelty, not a safety measure.
 
 ## Conventions
 
@@ -43,8 +45,14 @@ product unsafe or unauditable.
 - Colours come from `AppColors`; state colours (onBus / atSchool / manual /
   critical) carry meaning and are never reused as decoration.
 - Spacing from `Gap`, radii from `Radii`.
-- New external service? Put it behind an interface, like `FleetEventSource` and
-  `RoutingService`, so it can be swapped without touching callers.
+- New external service? Put it behind an interface, like `FleetEventSource`,
+  `RoutingService` and `NavigationService`, so it can be swapped without
+  touching callers.
+- Charts are single-series by default. Before shipping any categorical palette,
+  run the dataviz validator — the app's own state colours fail it, which is why
+  the state breakdown is four tiles rather than one stacked bar.
+- Chart colours are their own tokens (`chartAccent`), checked per mode against
+  that mode's surface. Never derive the dark step by flipping the light one.
 
 ## Testing notes
 

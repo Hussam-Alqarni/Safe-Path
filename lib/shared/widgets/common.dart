@@ -125,46 +125,50 @@ class StatTile extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final tint = accent ?? c.ink;
 
-    return Container(
-      padding: const EdgeInsets.all(Gap.lg),
-      decoration: BoxDecoration(
-        color: c.surface,
-        border: Border.all(color: c.line),
-        borderRadius: BorderRadius.circular(Radii.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 16, color: tint),
-                const SizedBox(width: Gap.sm),
-              ],
-              Expanded(
-                child: Text(
-                  label,
-                  style: text.bodySmall,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+    return Semantics(
+      label: label,
+      value: caption == null ? value : '$value, $caption',
+      child: Container(
+        padding: const EdgeInsets.all(Gap.lg),
+        decoration: BoxDecoration(
+          color: c.surface,
+          border: Border.all(color: c.line),
+          borderRadius: BorderRadius.circular(Radii.md),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 16, color: tint),
+                  const SizedBox(width: Gap.sm),
+                ],
+                Expanded(
+                  child: Text(
+                    label,
+                    style: text.bodySmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: Gap.sm),
-          Text(
-            value,
-            style: text.headlineMedium?.copyWith(
-              color: tint,
-              fontFeatures: const [FontFeature.tabularFigures()],
+              ],
             ),
-          ),
-          if (caption != null) ...[
-            const SizedBox(height: 2),
-            Text(caption!, style: text.bodySmall),
+            const SizedBox(height: Gap.sm),
+            Text(
+              value,
+              style: text.headlineMedium?.copyWith(
+                color: tint,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            if (caption != null) ...[
+              const SizedBox(height: 2),
+              Text(caption!, style: text.bodySmall),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

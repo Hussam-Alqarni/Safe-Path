@@ -147,6 +147,11 @@ enum JourneyStage {
 /// Safety anomalies detected by [reconcile]-style checks.
 /// Ordered most severe first — the UI relies on this ordering.
 enum SafetyAlertKind {
+  /// The driver pressed the emergency button. Ranked above everything else:
+  /// every other alert is the system noticing something; this one is a person
+  /// asking for help.
+  emergency,
+
   /// Boarded and the trip ended without them alighting. The alert this whole
   /// product exists to raise.
   leftOnBus,
@@ -174,6 +179,7 @@ enum AlertSeverity {
 
 extension SafetyAlertKindX on SafetyAlertKind {
   AlertSeverity get severity => switch (this) {
+        SafetyAlertKind.emergency => AlertSeverity.critical,
         SafetyAlertKind.leftOnBus => AlertSeverity.critical,
         SafetyAlertKind.missingGateEntry => AlertSeverity.critical,
         SafetyAlertKind.leftSchoolNotOnBus => AlertSeverity.warning,
@@ -184,6 +190,7 @@ extension SafetyAlertKindX on SafetyAlertKind {
 
 /// Categories of guardian-facing notification.
 enum NotificationKind {
+  emergency,
   boarded,
   alighted,
   enteredSchool,

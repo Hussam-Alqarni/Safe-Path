@@ -26,20 +26,49 @@ void main() {
     await fleet.dispose();
   });
 
-  Trip northTrip() => controller.state.trips
-      .firstWhere((t) => t.busId == 'bus-north');
+  /// The morning run on the north bus. Named explicitly because a bus now has
+  /// two runs a day and "the north trip" would otherwise be ambiguous.
+  Trip northTrip() => controller.state.trips.firstWhere(
+        (t) => t.busId == 'bus-north' && t.direction == TripDirection.toSchool,
+      );
 
   String cardOf(String studentId) =>
       SeedData.studentsById[studentId]!.cardUid;
 
   group('bootstrap', () {
-    test('builds one morning trip per morning route', () {
-      expect(controller.state.trips, hasLength(2));
+    test('builds both runs for every route', () {
+      // A bus does a morning and an afternoon run. Building only the morning
+      // one meant the app could never reach the second half of the day, and a
+      // guardian could not declare an afternoon absence at breakfast.
+      expect(controller.state.trips, hasLength(4));
+
+      final morning = controller.state.trips
+          .where((t) => t.direction == TripDirection.toSchool);
+      final afternoon = controller.state.trips
+          .where((t) => t.direction == TripDirection.fromSchool);
+      expect(morning, hasLength(2));
+      expect(afternoon, hasLength(2));
+    });
+
+    test('each bus has exactly one run in each direction', () {
+      for (final busId in const ['bus-north', 'bus-east']) {
+        final runs = controller.state.trips.where((t) => t.busId == busId);
+        expect(runs, hasLength(2));
+        expect(
+          runs.map((t) => t.direction).toSet(),
+          {TripDirection.toSchool, TripDirection.fromSchool},
+        );
+      }
+    });
+
+    test('an afternoon run starts at the school', () {
+      final afternoon = controller.state.trips.firstWhere(
+        (t) => t.direction == TripDirection.fromSchool,
+      );
       expect(
-        controller.state.trips.every(
-          (t) => t.direction == TripDirection.toSchool,
-        ),
-        isTrue,
+        afternoon.path.points.first
+            .distanceTo(controller.state.school.location),
+        lessThan(5),
       );
     });
 
@@ -53,6 +82,7 @@ void main() {
 
     test('assigns every bus rider to a stop on some trip', () {
       final assigned = controller.state.trips
+          .where((t) => t.direction == TripDirection.toSchool)
           .expand((t) => t.expectedStudentIds)
           .toSet();
       final riders =
@@ -484,6 +514,103 @@ void main() {
       controller.beginImpersonation(UserRole.guardian);
       controller.signInAs(SeedData.schoolAdmin);
       expect(controller.state.isImpersonating, isFalse);
+    });
+  });
+
+  group('the emergency button', () {
+    test('raises a critical alert against the right bus', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+
+      controller.raiseEmergency(
+        tripId: trip.id,
+        raisedByUserId: 'driver-north',
+      );
+
+      final alert = controller.state.openAlerts.first;
+      expect(alert.kind, SafetyAlertKind.emergency);
+      expect(alert.severity, AlertSeverity.critical);
+      expect(alert.busId, trip.busId);
+    });
+
+    test('an emergency outranks every other open alert', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+
+      // Create a left-on-bus alert first, then an emergency.
+      final studentId = trip.expectedStudentIds.first;
+      await fleet.scanCard(trip: trip, cardUid: cardOf(studentId));
+      await controller.endTrip(trip.id);
+      controller.raiseEmergency(
+        tripId: trip.id,
+        raisedByUserId: 'driver-north',
+      );
+
+      expect(
+        controller.state.openAlerts.first.kind,
+        SafetyAlertKind.emergency,
+      );
+    });
+
+    test('notifies the guardians of students currently on board', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+      await fleet.scanCard(trip: trip, cardUid: cardOf(studentId));
+
+      controller.raiseEmergency(
+        tripId: trip.id,
+        raisedByUserId: 'driver-north',
+      );
+
+      final notified = controller.state.notifications.where(
+        (n) => n.kind == NotificationKind.emergency,
+      );
+      expect(notified, isNotEmpty);
+      expect(notified.map((n) => n.studentId), contains(studentId));
+    });
+
+    test('does not alarm a guardian whose child already got off', () async {
+      // Telling a parent whose child is safely at school that there is an
+      // emergency on that bus is a cruelty, not a safety measure.
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      await fleet.scanCard(trip: trip, cardUid: cardOf(studentId));
+      await fleet.scanCard(trip: trip, cardUid: cardOf(studentId));
+
+      controller.raiseEmergency(
+        tripId: trip.id,
+        raisedByUserId: 'driver-north',
+      );
+
+      final notified = controller.state.notifications.where(
+        (n) => n.kind == NotificationKind.emergency,
+      );
+      expect(notified, isEmpty);
+    });
+
+    test('is written to the audit log', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      controller.raiseEmergency(
+        tripId: trip.id,
+        raisedByUserId: 'driver-north',
+      );
+
+      expect(
+        controller.state.auditLog.map((e) => e.action),
+        contains('emergency.raised'),
+      );
+    });
+
+    test('an unknown trip is ignored rather than crashing', () {
+      controller.raiseEmergency(
+        tripId: 'no-such-trip',
+        raisedByUserId: 'driver-north',
+      );
+      expect(controller.state.openAlerts, isEmpty);
     });
   });
 

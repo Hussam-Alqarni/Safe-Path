@@ -570,11 +570,36 @@ class _StopRow extends StatelessWidget {
 
 /// The notification feed, including the confirm/dispute action that turns a
 /// guardian into a second verification layer for hand-entered records.
-class GuardianNotificationsScreen extends ConsumerWidget {
+class GuardianNotificationsScreen extends ConsumerStatefulWidget {
   const GuardianNotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GuardianNotificationsScreen> createState() =>
+      _GuardianNotificationsScreenState();
+}
+
+class _GuardianNotificationsScreenState
+    extends ConsumerState<GuardianNotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Reading the feed is what marks it read, which is what everyone expects
+    // and what keeps the badge meaningful.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _markAllRead());
+  }
+
+  void _markAllRead() {
+    if (!mounted) return;
+    final controller = ref.read(controllerProvider.notifier);
+    for (final notification in ref.read(myNotificationsProvider)) {
+      if (notification.isUnread) {
+        controller.markNotificationRead(notification.id);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = AppStrings.of(context);
     final notifications = ref.watch(myNotificationsProvider);
 
@@ -612,7 +637,8 @@ class _NotificationCard extends ConsumerWidget {
             .where((e) => e.id == notification.attendanceEventId)
             .firstOrNull;
 
-    final isCritical = notification.kind == NotificationKind.safetyAlert;
+    final isCritical = notification.kind == NotificationKind.safetyAlert ||
+        notification.kind == NotificationKind.emergency;
     final isManual = notification.kind == NotificationKind.manualAttendance;
     final tint = isCritical
         ? c.critical
@@ -720,6 +746,7 @@ class _NotificationCard extends ConsumerWidget {
   }
 
   static IconData _iconFor(NotificationKind kind) => switch (kind) {
+        NotificationKind.emergency => Icons.sos_rounded,
         NotificationKind.boarded => Icons.login_rounded,
         NotificationKind.alighted => Icons.logout_rounded,
         NotificationKind.enteredSchool => Icons.school_rounded,

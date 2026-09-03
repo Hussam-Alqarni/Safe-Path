@@ -70,52 +70,59 @@ class _TrendChartState extends State<TrendChart> {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
+    return Semantics(
+      // The series read out as values, so the chart is not a blank rectangle
+      // to anyone using a screen reader. This is the table view the chart
+      // itself cannot be.
+      label:
+          widget.points.map((p) => '${p.label} ${_format(p.value)}').join(', '),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
 
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: (d) => _updateTouch(d.localPosition.dx, width),
-          onHorizontalDragUpdate: (d) =>
-              _updateTouch(d.localPosition.dx, width),
-          onHorizontalDragEnd: (_) => setState(() => _touched = null),
-          onTapUp: (_) => setState(() => _touched = null),
-          onTapCancel: () => setState(() => _touched = null),
-          child: SizedBox(
-            height: widget.height,
-            width: width,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _TrendPainter(
-                      points: widget.points,
-                      accent: c.chartAccent,
-                      grid: c.chartGrid,
-                      surface: c.surface,
-                      labelColor: c.inkMuted,
-                      touched: _touched,
-                      referenceValue: widget.referenceValue,
-                      textStyle: text.labelSmall!.copyWith(color: c.inkMuted),
-                      valueStyle: text.labelMedium!.copyWith(color: c.ink),
-                      format: _format,
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (d) => _updateTouch(d.localPosition.dx, width),
+            onHorizontalDragUpdate: (d) =>
+                _updateTouch(d.localPosition.dx, width),
+            onHorizontalDragEnd: (_) => setState(() => _touched = null),
+            onTapUp: (_) => setState(() => _touched = null),
+            onTapCancel: () => setState(() => _touched = null),
+            child: SizedBox(
+              height: widget.height,
+              width: width,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _TrendPainter(
+                        points: widget.points,
+                        accent: c.chartAccent,
+                        grid: c.chartGrid,
+                        surface: c.surface,
+                        labelColor: c.inkMuted,
+                        touched: _touched,
+                        referenceValue: widget.referenceValue,
+                        textStyle: text.labelSmall!.copyWith(color: c.inkMuted),
+                        valueStyle: text.labelMedium!.copyWith(color: c.ink),
+                        format: _format,
+                      ),
                     ),
                   ),
-                ),
-                if (_touched != null)
-                  _Tooltip(
-                    point: widget.points[_touched!],
-                    value: _format(widget.points[_touched!].value),
-                    alignment: _touched! > widget.points.length / 2
-                        ? Alignment.topLeft
-                        : Alignment.topRight,
-                  ),
-              ],
+                  if (_touched != null)
+                    _Tooltip(
+                      point: widget.points[_touched!],
+                      value: _format(widget.points[_touched!].value),
+                      alignment: _touched! > widget.points.length / 2
+                          ? Alignment.topLeft
+                          : Alignment.topRight,
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -278,9 +285,7 @@ class _TrendPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_TrendPainter old) =>
-      old.touched != touched ||
-      old.points != points ||
-      old.accent != accent;
+      old.touched != touched || old.points != points || old.accent != accent;
 }
 
 class _Tooltip extends StatelessWidget {
@@ -388,58 +393,61 @@ class RankedBarChart extends StatelessWidget {
         for (final bar in bars)
           Padding(
             padding: const EdgeInsets.only(bottom: Gap.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        bar.label,
-                        style: text.bodyMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (bar.warn) ...[
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        size: 14,
-                        color: c.manual,
-                      ),
-                      const SizedBox(width: Gap.xs),
-                    ],
-                    Text(
-                      bar.display,
-                      // The value is a text token beside a coloured mark, not
-                      // the series colour itself.
-                      style: text.labelMedium?.copyWith(
-                        color: bar.warn ? c.manual : c.ink,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: Gap.xs),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Stack(
+            child: Semantics(
+              label: '${bar.label}: ${bar.display}',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                     children: [
-                      Container(height: 8, color: c.sunken),
-                      FractionallySizedBox(
-                        widthFactor: bar.value.clamp(0.02, 1),
-                        child: Container(
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: bar.warn ? c.manual : c.chartAccent,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+                      Expanded(
+                        child: Text(
+                          bar.label,
+                          style: text.bodyMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (bar.warn) ...[
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 14,
+                          color: c.manual,
+                        ),
+                        const SizedBox(width: Gap.xs),
+                      ],
+                      Text(
+                        bar.display,
+                        // The value is a text token beside a coloured mark, not
+                        // the series colour itself.
+                        style: text.labelMedium?.copyWith(
+                          color: bar.warn ? c.manual : c.ink,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: Gap.xs),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Stack(
+                      children: [
+                        Container(height: 8, color: c.sunken),
+                        FractionallySizedBox(
+                          widthFactor: bar.value.clamp(0.02, 1),
+                          child: Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: bar.warn ? c.manual : c.chartAccent,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         if (thresholdLabel != null)

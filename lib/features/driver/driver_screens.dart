@@ -7,23 +7,39 @@ import 'package:safe_path/data/repositories/providers.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
 import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
+import 'package:safe_path/features/driver/emergency_button.dart';
 import 'package:safe_path/features/driver/navigation_screen.dart';
 import 'package:safe_path/features/map/bus_position_animator.dart';
 import 'package:safe_path/features/map/map_view.dart';
 import 'package:safe_path/shared/widgets/common.dart';
 
 /// Finds the trip the signed-in driver is running today.
+/// The run this driver is on, or the next one they are due to start.
+///
+/// A bus does two runs a day. Ordering the scheduled ones by departure keeps
+/// the morning route in front of the driver at 6am and the afternoon route at
+/// 1pm, rather than whichever happened to be built first.
 Trip? _driverTrip(WidgetRef ref) {
   final state = ref.watch(controllerProvider);
   final busId = state.currentUser.assignedBusId ?? SeedData.buses.first.id;
   final candidates = state.trips.where((t) => t.busId == busId).toList();
+
   for (final trip in candidates) {
     if (trip.status == TripStatus.inProgress) return trip;
   }
-  for (final trip in candidates) {
-    if (trip.status == TripStatus.scheduled) return trip;
-  }
+
+  final scheduled = candidates
+      .where((t) => t.status == TripStatus.scheduled)
+      .toList()
+    ..sort((a, b) => _departure(a).compareTo(_departure(b)));
+  if (scheduled.isNotEmpty) return scheduled.first;
+
   return candidates.firstOrNull;
+}
+
+DateTime _departure(Trip trip) {
+  final route = SeedData.routes.where((r) => r.id == trip.routeId).firstOrNull;
+  return route?.departureTime.onDate(trip.serviceDate) ?? trip.serviceDate;
 }
 
 /// The driver's main screen.
@@ -87,6 +103,10 @@ class DriverTripScreen extends ConsumerWidget {
               ),
             ),
           ),
+        ],
+        if (trip.status == TripStatus.inProgress) ...[
+          const SizedBox(height: Gap.md),
+          EmergencyButton(tripId: trip.id),
         ],
         const SizedBox(height: Gap.lg),
         _CurrentStopPanel(trip: trip),

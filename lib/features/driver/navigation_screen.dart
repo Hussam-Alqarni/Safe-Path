@@ -7,6 +7,7 @@ import 'package:safe_path/data/repositories/providers.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
 import 'package:safe_path/domain/models/entities.dart';
 import 'package:safe_path/domain/services/navigation_service.dart';
+import 'package:safe_path/features/driver/emergency_button.dart';
 import 'package:safe_path/features/map/bus_position_animator.dart';
 import 'package:safe_path/features/map/map_view.dart';
 
@@ -344,6 +345,8 @@ class _NavigationControls extends ConsumerWidget {
                   ),
                 ],
               ),
+            const SizedBox(height: Gap.md),
+            EmergencyButton(tripId: trip.id, compact: true),
             const SizedBox(height: Gap.md),
             Row(
               children: [

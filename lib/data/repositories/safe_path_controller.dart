@@ -81,9 +81,9 @@ class SafePathController extends StateNotifier<AppState> {
 
     final trips = <Trip>[];
     for (final route in SeedData.routes) {
-      // Only the morning runs are built at start-up; the afternoon pair is
-      // created when the school day ends, exactly as a scheduler would.
-      if (route.direction != TripDirection.toSchool) continue;
+      // Both runs are built up front, the way a nightly scheduler would: a
+      // guardian can declare an afternoon absence at breakfast, and the plan
+      // it changes has to already exist.
       trips.add(
         await _planner.buildTrip(
           tripId: 'trip-${route.id}',
@@ -657,6 +657,73 @@ class SafePathController extends StateNotifier<AppState> {
       if (source is SimulatedFleet) source.updateTrip(replanned);
     }
     state = state.copyWith(trips: updated);
+  }
+
+  /// The driver asks for help.
+  ///
+  /// Every other alert is the system noticing something; this one is a person
+  /// pressing a button, so it goes to the school and to every guardian with a
+  /// child on board at once. Nothing about it is silent or deferred.
+  void raiseEmergency({
+    required String tripId,
+    required String raisedByUserId,
+    String? note,
+  }) {
+    final trip = state.tripById(tripId);
+    if (trip == null) return;
+
+    final now = DateTime.now();
+    final plate = _busPlate(trip.busId);
+
+    final alert = SafetyAlert(
+      id: _id(),
+      schoolId: state.school.id,
+      kind: SafetyAlertKind.emergency,
+      raisedAt: now,
+      titleAr: 'استغاثة من الحافلة $plate',
+      titleEn: 'Emergency on bus $plate',
+      detailAr: note ??
+          'ضغط السائق زر الاستغاثة أثناء الرحلة. اتصل بالسائق فوراً.',
+      detailEn: note ??
+          'The driver pressed the emergency button mid-trip. Call them now.',
+      tripId: tripId,
+      busId: trip.busId,
+    );
+
+    state = state.copyWith(alerts: [...state.alerts, alert]);
+
+    // Only students currently aboard: telling a guardian whose child already
+    // got off that there is an emergency on their bus is a cruelty, not a
+    // safety measure.
+    for (final studentId in _studentsOnBoard(tripId)) {
+      _notifyGuardians(
+        studentId: studentId,
+        kind: NotificationKind.emergency,
+        titleAr: 'استغاثة من الحافلة',
+        titleEn: 'Emergency on the bus',
+        bodyAr: alert.detailAr,
+        bodyEn: alert.detailEn,
+        at: now,
+      );
+    }
+
+    recordAudit(
+      action: 'emergency.raised',
+      detail: '$tripId by $raisedByUserId',
+    );
+  }
+
+  Set<String> _studentsOnBoard(String tripId) {
+    final aboard = <String>{};
+    for (final event in state.attendanceEvents) {
+      if (event.tripId != tripId) continue;
+      if (event.type == AttendanceEventType.boardedBus) {
+        aboard.add(event.studentId);
+      } else if (event.type == AttendanceEventType.alightedBus) {
+        aboard.remove(event.studentId);
+      }
+    }
+    return aboard;
   }
 
   // ── alerts, confirmations, audit ─────────────────────────────────────────

@@ -137,6 +137,39 @@ void main() {
     }
   });
 
+  testWidgets('opening the notification feed clears the unread badge',
+      (tester) async {
+    await pumpApp(tester);
+    await controller.bootstrap();
+    await settle(tester);
+
+    final trip = controller.state.trips.firstWhere(
+      (t) => t.expectedStudentIds.any(
+        SeedData.demoGuardian.linkedStudentIds.contains,
+      ),
+    );
+    await controller.startTrip(trip.id);
+    await settle(tester);
+
+    expect(
+      controller.state
+          .notificationsFor(SeedData.demoGuardian.id)
+          .where((n) => n.isUnread),
+      isNotEmpty,
+    );
+
+    await tester.tap(find.byIcon(Icons.notifications_outlined));
+    await settle(tester);
+
+    expect(
+      controller.state
+          .notificationsFor(SeedData.demoGuardian.id)
+          .where((n) => n.isUnread),
+      isEmpty,
+      reason: 'a badge that never clears trains people to ignore it',
+    );
+  });
+
   testWidgets('a left-on-bus alert reaches the guardian screen',
       (tester) async {
     await pumpApp(tester);
