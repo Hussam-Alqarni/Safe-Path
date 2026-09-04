@@ -21,6 +21,9 @@ class FakeFleetSource implements FleetEventSource {
   bool get isRunning => _running;
 
   @override
+  bool get isSimulated => true;
+
+  @override
   Future<void> start(List<Trip> trips) async {
     startedTrips
       ..clear()

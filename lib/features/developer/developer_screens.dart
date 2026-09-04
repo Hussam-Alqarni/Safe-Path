@@ -226,9 +226,9 @@ class _DiagnosticRow extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: accent ?? c.ink,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+              color: accent ?? c.ink,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
         ],
       ),
@@ -273,9 +273,9 @@ class DeveloperEventLogScreen extends ConsumerWidget {
               Text(
                 formatClock(event.occurredAt),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: c.inkSoft,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                  color: c.inkSoft,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
               const SizedBox(width: Gap.md),
               Expanded(
@@ -351,7 +351,10 @@ class DeveloperAuditScreen extends ConsumerWidget {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     Text(
-                      '${s.roleName(entry.actorRole)}'
+                      // Naming the person is the point of the log; a role
+                      // alone cannot be held to anything.
+                      '${SeedData.usersById[entry.actorUserId]?.fullNameAr ?? entry.actorUserId}'
+                      ' · ${s.roleName(entry.actorRole)}'
                       '${entry.detail == null ? '' : ' → ${entry.detail}'}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -361,9 +364,9 @@ class DeveloperAuditScreen extends ConsumerWidget {
               Text(
                 formatClock(entry.occurredAt),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: c.inkMuted,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                  color: c.inkMuted,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ],
           ),

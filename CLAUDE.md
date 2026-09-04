@@ -5,7 +5,7 @@ School transport safety platform. Arabic-first, bilingual (ar/en), RTL.
 ## Commands
 
 ```bash
-flutter test          # 175 tests — keep them green
+flutter test          # 188 tests — keep them green
 dart analyze          # must stay clean; the repo has no warnings
 dart format lib test
 flutter run           # demo mode: no key, no backend, no hardware
@@ -38,6 +38,16 @@ product unsafe or unauditable.
 7. **`schoolId` on every record.** The pilot is one school; the schema is not.
 8. **An emergency reaches only guardians whose child is aboard.** Alarming a
    parent whose child already got off is a cruelty, not a safety measure.
+9. **Simulated data is always labelled, from the source itself.**
+   `FleetEventSource.isSimulated` drives the banner — never a config flag.
+   Asking for live mode does not conjure a live feed, and unlabelled invented
+   positions are the one failure this product cannot afford.
+10. **The audit log names the person and their real role**, never the
+    borrowed one. Logging a developer's action as "school admin" hides
+    exactly the access the log exists to record.
+11. **A guardian cannot delete a driver's observation.** `cancelAbsence`
+    removes only what the guardian declared; a no-show is a record of what
+    happened at the stop.
 
 ## Conventions
 

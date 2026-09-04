@@ -56,9 +56,8 @@ class _StudentDetail extends ConsumerWidget {
 
     final snapshot = ref.watch(studentSnapshotProvider(studentId));
     final style = stageStyle(context, snapshot.stage);
-    final stop = student.stopId == null
-        ? null
-        : SeedData.stopsById[student.stopId];
+    final stop =
+        student.stopId == null ? null : SeedData.stopsById[student.stopId];
     final walk = student.walkToStopMetres(stop)?.round();
     final canEdit = ref.watch(effectiveRoleProvider).canEditStudents;
 
@@ -100,7 +99,6 @@ class _StudentDetail extends ConsumerWidget {
           icon: style.icon,
         ),
         const SizedBox(height: Gap.xl),
-
         SectionCard(
           title: s.homeLocation,
           trailing: canEdit
@@ -109,8 +107,7 @@ class _StudentDetail extends ConsumerWidget {
                   label: Text(
                     student.hasHome ? s.changeHome : s.setHomeFromLink,
                   ),
-                  onPressed: () =>
-                      showHomeLocationSheet(context, ref, student),
+                  onPressed: () => showHomeLocationSheet(context, ref, student),
                 )
               : null,
           child: student.hasHome
@@ -126,7 +123,6 @@ class _StudentDetail extends ConsumerWidget {
                   ),
                 ),
         ),
-
         if (snapshot.events.isNotEmpty) ...[
           const SizedBox(height: Gap.lg),
           SectionCard(
@@ -163,15 +159,13 @@ class _StudentDetail extends ConsumerWidget {
                           ),
                         Text(
                           formatClock(event.occurredAt),
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelMedium
-                              ?.copyWith(
-                                color: c.inkSoft,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: c.inkSoft,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -217,9 +211,9 @@ class _HomeDetails extends StatelessWidget {
                 value,
                 textDirection: ltr ? TextDirection.ltr : null,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: accent ?? c.ink,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                  color: accent ?? c.ink,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ],
           ),
@@ -228,8 +222,7 @@ class _HomeDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (student.homeLabel != null)
-          row(s.homeLocation, student.homeLabel!),
+        if (student.homeLabel != null) row(s.homeLocation, student.homeLabel!),
         row(
           s.coordinates,
           '${home.latitude.toStringAsFixed(5)}, '

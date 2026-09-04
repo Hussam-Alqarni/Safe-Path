@@ -124,12 +124,66 @@ class _ReaderPanel extends ConsumerWidget {
             label: Text(s.gateSimulateTap),
             onPressed: () => _pickStudent(context, ref),
           ),
+          const SizedBox(height: Gap.sm),
+          // Staff need the same fallback the driver has. Recording a
+          // hand-entered arrival as a card scan would tell a guardian their
+          // child's card was read when nobody read it.
+          OutlinedButton.icon(
+            icon: const Icon(Icons.edit_note_rounded, size: 18),
+            label: Text(s.driverManualEntry),
+            onPressed: () => _pickStudent(context, ref, manual: true),
+          ),
         ],
       ),
     );
   }
 
-  Future<void> _pickStudent(BuildContext context, WidgetRef ref) async {
+  /// Why a gate record had to be entered by hand.
+  Future<ManualEntryReason?> _askReason(BuildContext context) {
+    final s = AppStrings.of(context);
+    return showModalBottomSheet<ManualEntryReason>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => Directionality(
+        textDirection: s.direction,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Gap.lg, 0, Gap.lg, Gap.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  s.driverManualEntryTitle,
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+                const SizedBox(height: Gap.sm),
+                Text(
+                  s.driverManualEntryExplain,
+                  style: Theme.of(sheetContext).textTheme.bodySmall,
+                ),
+                const SizedBox(height: Gap.lg),
+                for (final reason in ManualEntryReason.values)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Gap.sm),
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(reason),
+                      child: Text(s.manualReasonLabel(reason)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickStudent(
+    BuildContext context,
+    WidgetRef ref, {
+    bool manual = false,
+  }) async {
     final s = AppStrings.of(context);
     final students = ref.read(studentsProvider);
     final student = await showModalBottomSheet<Student>(
@@ -167,10 +221,22 @@ class _ReaderPanel extends ConsumerWidget {
     );
 
     if (student == null) return;
+
+    ManualEntryReason? reason;
+    if (manual) {
+      if (!context.mounted) return;
+      reason = await _askReason(context);
+      if (reason == null) return;
+    }
+
     ref.read(controllerProvider.notifier).recordGateAttendance(
           studentId: student.id,
-          method: VerificationMethod.nfcCard,
+          method: manual
+              ? VerificationMethod.manualStaff
+              : VerificationMethod.nfcCard,
           at: DateTime.now(),
+          reason: reason,
+          recordedByUserId: ref.read(controllerProvider).currentUser.id,
         );
   }
 }
@@ -186,9 +252,8 @@ class _GateRow extends ConsumerWidget {
     final s = AppStrings.of(context);
     final c = context.colors;
     final snapshot = ref.watch(studentSnapshotProvider(student.id));
-    final lastGate = snapshot.events
-        .where((e) => e.type.isGateEvent)
-        .lastOrNull;
+    final lastGate =
+        snapshot.events.where((e) => e.type.isGateEvent).lastOrNull;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -216,9 +281,9 @@ class _GateRow extends ConsumerWidget {
             Text(
               formatClock(lastGate.occurredAt),
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: c.inkSoft,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                color: c.inkSoft,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
         ],
       ),

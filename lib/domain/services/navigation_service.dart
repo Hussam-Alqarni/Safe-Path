@@ -162,7 +162,8 @@ class GeometryNavigationService implements NavigationService {
     );
 
     steps.sort(
-      (a, b) => a.distanceAlongRouteMetres.compareTo(b.distanceAlongRouteMetres),
+      (a, b) =>
+          a.distanceAlongRouteMetres.compareTo(b.distanceAlongRouteMetres),
     );
     return steps;
   }
@@ -201,8 +202,7 @@ ActiveGuidance? guidanceAt({
 
   for (var i = 0; i < steps.length; i++) {
     final step = steps[i];
-    final remaining =
-        step.distanceAlongRouteMetres - distanceAlongRouteMetres;
+    final remaining = step.distanceAlongRouteMetres - distanceAlongRouteMetres;
 
     // A manoeuvre stays current until it is comfortably behind the bus, so the
     // banner does not flicker to the next instruction while turning.

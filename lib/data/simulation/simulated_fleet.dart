@@ -50,6 +50,9 @@ class SimulatedFleet implements FleetEventSource {
   bool get isRunning => _running;
 
   @override
+  bool get isSimulated => true;
+
+  @override
   Future<void> start(List<Trip> trips) async {
     await stop();
     _vehicles.clear();

@@ -327,6 +327,7 @@ class ArabicStrings extends AppStrings {
         SafetyAlertKind.leftOnBus => 'طالب لم يسجّل نزوله',
         SafetyAlertKind.missingGateEntry => 'نزل ولم يدخل المدرسة',
         SafetyAlertKind.leftSchoolNotOnBus => 'خرج ولم يركب الحافلة',
+        SafetyAlertKind.guardianDisputed => 'ولي أمر اعترض على تسجيل يدوي',
         SafetyAlertKind.trackerSilent => 'انقطعت إشارة الحافلة',
         SafetyAlertKind.highManualRate => 'نسبة تحضير يدوي مرتفعة',
       };
@@ -516,7 +517,9 @@ class ArabicStrings extends AppStrings {
 
   @override
   String maneuverToStop(Maneuver maneuver, String stopName) =>
-      maneuver == Maneuver.arriveStop ? 'محطة $stopName' : maneuverLabel(maneuver);
+      maneuver == Maneuver.arriveStop
+          ? 'محطة $stopName'
+          : maneuverLabel(maneuver);
 
   @override
   String get homeLocation => 'موقع المنزل';
@@ -770,6 +773,7 @@ class EnglishStrings extends AppStrings {
         SafetyAlertKind.leftOnBus => 'Never scanned off the bus',
         SafetyAlertKind.missingGateEntry => 'Off the bus, not through the gate',
         SafetyAlertKind.leftSchoolNotOnBus => 'Left school, not on a bus',
+        SafetyAlertKind.guardianDisputed => 'Guardian disputed a manual record',
         SafetyAlertKind.trackerSilent => 'Bus signal lost',
         SafetyAlertKind.highManualRate => 'High manual-entry rate',
       };

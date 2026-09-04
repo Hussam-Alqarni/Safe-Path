@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:safe_path/core/config/app_config.dart';
+import 'package:safe_path/data/repositories/app_state.dart';
 import 'package:safe_path/data/repositories/safe_path_controller.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
 import 'package:safe_path/domain/enums.dart';
@@ -32,8 +33,7 @@ void main() {
         (t) => t.busId == 'bus-north' && t.direction == TripDirection.toSchool,
       );
 
-  String cardOf(String studentId) =>
-      SeedData.studentsById[studentId]!.cardUid;
+  String cardOf(String studentId) => SeedData.studentsById[studentId]!.cardUid;
 
   group('bootstrap', () {
     test('builds both runs for every route', () {
@@ -192,8 +192,7 @@ void main() {
 
       final alerted = controller.state.notifications.where(
         (n) =>
-            n.studentId == studentId &&
-            n.kind == NotificationKind.safetyAlert,
+            n.studentId == studentId && n.kind == NotificationKind.safetyAlert,
       );
       expect(alerted, isNotEmpty);
     });
@@ -301,7 +300,8 @@ void main() {
     test('a stop with other riders is kept, minus the absent student',
         () async {
       final trip = northTrip();
-      final stop = trip.stops.firstWhere((s) => s.expectedStudentIds.length > 1);
+      final stop =
+          trip.stops.firstWhere((s) => s.expectedStudentIds.length > 1);
       final studentId = stop.expectedStudentIds.first;
 
       await controller.declareAbsence(
@@ -446,8 +446,7 @@ void main() {
     });
 
     test('covers students who never ride a bus', () {
-      final walker =
-          SeedData.students.firstWhere((s) => !s.usesBus);
+      final walker = SeedData.students.firstWhere((s) => !s.usesBus);
       controller.recordGateAttendance(
         studentId: walker.id,
         method: VerificationMethod.nfcCard,
@@ -611,6 +610,265 @@ void main() {
         raisedByUserId: 'driver-north',
       );
       expect(controller.state.openAlerts, isEmpty);
+    });
+  });
+
+  group('the gate-gap watchdog', () {
+    test('flags a student who left the bus and never reached the gate',
+        () async {
+      // The check existed and was tested in isolation, but nothing in the app
+      // ever called it — so the feature the README advertises did not run.
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      final alighted = DateTime.now().subtract(const Duration(minutes: 20));
+      await fleet.scanCard(
+        trip: trip,
+        cardUid: cardOf(studentId),
+        at: alighted.subtract(const Duration(minutes: 10)),
+      );
+      await fleet.scanCard(
+        trip: trip,
+        cardUid: cardOf(studentId),
+        at: alighted,
+      );
+
+      controller.runPeriodicChecks();
+
+      final gaps = controller.state.openAlerts
+          .where((a) => a.kind == SafetyAlertKind.missingGateEntry);
+      expect(gaps, hasLength(1));
+      expect(gaps.single.studentId, studentId);
+    });
+
+    test('stays quiet once the student taps in at the gate', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      final alighted = DateTime.now().subtract(const Duration(minutes: 20));
+      await fleet.scanCard(
+        trip: trip,
+        cardUid: cardOf(studentId),
+        at: alighted.subtract(const Duration(minutes: 10)),
+      );
+      await fleet.scanCard(
+        trip: trip,
+        cardUid: cardOf(studentId),
+        at: alighted,
+      );
+      controller.recordGateAttendance(
+        studentId: studentId,
+        method: VerificationMethod.nfcCard,
+        at: alighted.add(const Duration(minutes: 2)),
+      );
+
+      controller.runPeriodicChecks();
+      expect(
+        controller.state.openAlerts
+            .where((a) => a.kind == SafetyAlertKind.missingGateEntry),
+        isEmpty,
+      );
+    });
+
+    test('raises the same gap only once', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      final alighted = DateTime.now().subtract(const Duration(minutes: 20));
+      await fleet.scanCard(
+        trip: trip,
+        cardUid: cardOf(studentId),
+        at: alighted.subtract(const Duration(minutes: 10)),
+      );
+      await fleet.scanCard(
+        trip: trip,
+        cardUid: cardOf(studentId),
+        at: alighted,
+      );
+
+      controller.runPeriodicChecks();
+      controller.runPeriodicChecks();
+      controller.runPeriodicChecks();
+
+      expect(
+        controller.state.openAlerts
+            .where((a) => a.kind == SafetyAlertKind.missingGateEntry),
+        hasLength(1),
+      );
+    });
+  });
+
+  group('a silent tracker', () {
+    test('raises an alert, not just a greyed marker', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      await fleet.moveTo(trip: trip, distanceMetres: 300);
+
+      await fleet.goSilent(trip: trip);
+
+      final alerts = controller.state.openAlerts
+          .where((a) => a.kind == SafetyAlertKind.trackerSilent);
+      expect(alerts, hasLength(1));
+      expect(alerts.single.busId, trip.busId);
+    });
+
+    test('does not repeat while the tracker stays quiet', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      await fleet.moveTo(trip: trip, distanceMetres: 300);
+
+      await fleet.goSilent(trip: trip);
+      await fleet.goSilent(trip: trip);
+
+      expect(
+        controller.state.openAlerts
+            .where((a) => a.kind == SafetyAlertKind.trackerSilent),
+        hasLength(1),
+      );
+    });
+  });
+
+  group('a disputed record', () {
+    test('is raised under its own heading, not another alert\'s', () async {
+      // It used to reuse SafetyAlertKind.leftSchoolNotOnBus, so an admin saw
+      // "Left school, not on a bus" over a body about a disputed record.
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      controller.recordBusAttendance(
+        studentId: trip.expectedStudentIds.first,
+        tripId: trip.id,
+        method: VerificationMethod.manualDriver,
+        at: DateTime.now(),
+        reason: ManualEntryReason.forgottenCard,
+        recordedByUserId: 'driver-north',
+      );
+
+      controller.respondToManualEntry(
+        attendanceEventId: controller.state.attendanceEvents.last.id,
+        response: GuardianConfirmation.disputed,
+      );
+
+      expect(
+        controller.state.openAlerts.first.kind,
+        SafetyAlertKind.guardianDisputed,
+      );
+    });
+  });
+
+  group('absence scoping', () {
+    test('a no-show applies to that run only', () async {
+      // A child who missed the morning bus is very often still going home on
+      // the afternoon one.
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      controller.markNoShow(
+        studentId: studentId,
+        tripId: trip.id,
+        recordedByUserId: 'driver-north',
+      );
+
+      expect(
+        controller.state
+            .absenceFor(studentId, direction: TripDirection.toSchool),
+        isNotNull,
+      );
+      expect(
+        controller.state
+            .absenceFor(studentId, direction: TripDirection.fromSchool),
+        isNull,
+      );
+    });
+
+    test('a guardian cannot delete the driver\'s no-show record', () async {
+      // The driver's record is an observation of what happened at the stop,
+      // not a request. Letting the people it describes erase it would make
+      // the log something its subjects can rewrite.
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      controller.markNoShow(
+        studentId: studentId,
+        tripId: trip.id,
+        recordedByUserId: 'driver-north',
+      );
+      await controller.cancelAbsence(studentId);
+
+      final remaining = controller.state.absencesFor(studentId);
+      expect(remaining, hasLength(1));
+      expect(remaining.single.reason, AbsenceReason.noShowAtStop);
+    });
+
+    test('cancelling a declared absence is audited', () async {
+      final studentId = northTrip().expectedStudentIds.first;
+      await controller.declareAbsence(
+        studentId: studentId,
+        declaredByUserId: 'guardian-demo',
+      );
+      await controller.cancelAbsence(studentId);
+
+      expect(
+        controller.state.auditLog.map((e) => e.action),
+        contains('absence.cancelled'),
+      );
+    });
+
+    test('yesterday\'s absence does not keep a child off today\'s bus', () {
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      expect(
+        controller.state.absenceFor('student-001', on: yesterday),
+        isNull,
+      );
+    });
+  });
+
+  group('audit correctness', () {
+    test('records the real actor, never the borrowed role', () {
+      // Logging a developer's action as "school admin" would hide exactly the
+      // access the log exists to record.
+      controller.signInAs(SeedData.developer);
+      controller.beginImpersonation(UserRole.schoolAdmin);
+      controller.recordAudit(action: 'test.action');
+
+      final entry = controller.state.auditLog.last;
+      expect(entry.actorUserId, SeedData.developer.id);
+      expect(entry.actorRole, UserRole.developer);
+      expect(entry.detail, contains('schoolAdmin'));
+    });
+
+    test('impersonation actually expires', () {
+      controller.signInAs(SeedData.developer);
+      controller.beginImpersonation(UserRole.guardian);
+      expect(controller.state.isImpersonating, isTrue);
+
+      // Wind the session back past its hour.
+      final expired = ImpersonationSession(
+        role: UserRole.guardian,
+        startedAt: DateTime.now().subtract(const Duration(hours: 2)),
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+      );
+      controller.state = controller.state.copyWith(impersonation: expired);
+
+      controller.runPeriodicChecks();
+
+      expect(controller.state.isImpersonating, isFalse);
+      expect(
+        controller.state.auditLog.map((e) => e.action),
+        contains('impersonation.expired'),
+      );
+    });
+  });
+
+  group('simulated data is always labelled', () {
+    test('the state reports that its source is simulated', () {
+      // Asking for live mode does not conjure a live feed; the flag follows
+      // the source, not the configuration.
+      expect(controller.state.usesSimulatedData, isTrue);
     });
   });
 

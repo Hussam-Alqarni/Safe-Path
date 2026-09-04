@@ -35,8 +35,7 @@ class DriverReliability {
   final int totalRecords;
   final int manualRecords;
 
-  double get manualRate =>
-      totalRecords == 0 ? 0 : manualRecords / totalRecords;
+  double get manualRate => totalRecords == 0 ? 0 : manualRecords / totalRecords;
 }
 
 /// How close a route ran to its plan.

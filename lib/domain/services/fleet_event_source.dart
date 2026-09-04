@@ -91,4 +91,11 @@ abstract class FleetEventSource {
   Future<void> stop();
 
   bool get isRunning;
+
+  /// Whether these positions were invented rather than reported by a vehicle.
+  ///
+  /// The source knows; nothing above it should have to guess from a type. The
+  /// UI marks simulated data on the strength of this, and mislabelling it is
+  /// the one failure this product cannot afford.
+  bool get isSimulated;
 }

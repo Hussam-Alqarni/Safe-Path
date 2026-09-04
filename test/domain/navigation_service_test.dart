@@ -141,12 +141,14 @@ void main() {
       );
       final kinds = steps.map((s) => s.maneuver).toSet();
       final hasLeft = kinds.any(
-        (m) => m == Maneuver.left ||
+        (m) =>
+            m == Maneuver.left ||
             m == Maneuver.slightLeft ||
             m == Maneuver.sharpLeft,
       );
       final hasRight = kinds.any(
-        (m) => m == Maneuver.right ||
+        (m) =>
+            m == Maneuver.right ||
             m == Maneuver.slightRight ||
             m == Maneuver.sharpRight,
       );
@@ -167,8 +169,7 @@ void main() {
         trip: await buildTrip(),
         stopsById: stopsById,
       );
-      final guidance =
-          guidanceAt(steps: steps, distanceAlongRouteMetres: 0)!;
+      final guidance = guidanceAt(steps: steps, distanceAlongRouteMetres: 0)!;
       expect(guidance.current.maneuver, Maneuver.depart);
       expect(guidance.metresToManeuver, 0);
     });
@@ -212,8 +213,7 @@ void main() {
         trip: await buildTrip(),
         stopsById: stopsById,
       );
-      final guidance =
-          guidanceAt(steps: steps, distanceAlongRouteMetres: 0)!;
+      final guidance = guidanceAt(steps: steps, distanceAlongRouteMetres: 0)!;
       expect(guidance.next, isNotNull);
       expect(
         guidance.next!.distanceAlongRouteMetres,

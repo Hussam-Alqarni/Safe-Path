@@ -166,6 +166,10 @@ enum SafetyAlertKind {
   /// Tracker has gone quiet mid-trip.
   trackerSilent,
 
+  /// A guardian says a hand-entered record is wrong. Their word against the
+  /// log is exactly the case manual entry has to be answerable for.
+  guardianDisputed,
+
   /// This driver's manual-entry rate is abnormal — broken reader, or worse.
   highManualRate,
 }
@@ -183,6 +187,7 @@ extension SafetyAlertKindX on SafetyAlertKind {
         SafetyAlertKind.leftOnBus => AlertSeverity.critical,
         SafetyAlertKind.missingGateEntry => AlertSeverity.critical,
         SafetyAlertKind.leftSchoolNotOnBus => AlertSeverity.warning,
+        SafetyAlertKind.guardianDisputed => AlertSeverity.warning,
         SafetyAlertKind.trackerSilent => AlertSeverity.warning,
         SafetyAlertKind.highManualRate => AlertSeverity.info,
       };

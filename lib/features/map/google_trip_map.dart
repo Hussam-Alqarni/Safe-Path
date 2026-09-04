@@ -95,12 +95,21 @@ class _GoogleTripMapState extends State<GoogleTripMap> {
       'bus-stale': await factory.bus(color: palette.absent, stale: true),
       'school': await factory.school(color: palette.atSchool),
       'home': await factory.home(color: palette.brandMuted),
-      'stop-pending':
-          await factory.stop(color: palette.brand, filled: false, struck: false),
-      'stop-done':
-          await factory.stop(color: palette.delivered, filled: true, struck: false),
-      'stop-skipped':
-          await factory.stop(color: palette.absent, filled: false, struck: true),
+      'stop-pending': await factory.stop(
+        color: palette.brand,
+        filled: false,
+        struck: false,
+      ),
+      'stop-done': await factory.stop(
+        color: palette.delivered,
+        filled: true,
+        struck: false,
+      ),
+      'stop-skipped': await factory.stop(
+        color: palette.absent,
+        filled: false,
+        struck: true,
+      ),
     };
 
     if (!mounted) return;

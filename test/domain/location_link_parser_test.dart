@@ -90,7 +90,9 @@ void main() {
     });
 
     test('tolerates surrounding chatter from a pasted message', () {
-      final r = parsed('موقع البيت: https://www.google.com/maps?q=21.5433,39.1728 شكراً');
+      final r = parsed(
+        'موقع البيت: https://www.google.com/maps?q=21.5433,39.1728 شكراً',
+      );
       expect(r.point.latitude, closeTo(21.5433, 1e-6));
     });
   });

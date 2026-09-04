@@ -161,9 +161,8 @@ class _TripControlBar extends ConsumerWidget {
                   TripStatus.completed => s.tripCompleted,
                   _ => s.tripNotStarted,
                 },
-                foreground: trip.status == TripStatus.inProgress
-                    ? c.onBus
-                    : c.inkSoft,
+                foreground:
+                    trip.status == TripStatus.inProgress ? c.onBus : c.inkSoft,
                 background: trip.status == TripStatus.inProgress
                     ? c.onBusSurface
                     : c.sunken,
@@ -271,7 +270,10 @@ class _CurrentStopPanel extends ConsumerWidget {
       subtitle: s.driverExpectedHere,
       padded: false,
       child: stop.expectedStudentIds.isEmpty
-          ? EmptyState(message: s.driverNobodyHere, icon: Icons.person_off_rounded)
+          ? EmptyState(
+              message: s.driverNobodyHere,
+              icon: Icons.person_off_rounded,
+            )
           : Column(
               children: [
                 for (final studentId in stop.expectedStudentIds)
@@ -400,8 +402,7 @@ class _StudentActionRow extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: Gap.sm),
                     child: OutlinedButton(
-                      onPressed: () =>
-                          Navigator.of(sheetContext).pop(reason),
+                      onPressed: () => Navigator.of(sheetContext).pop(reason),
                       child: Text(s.manualReasonLabel(reason)),
                     ),
                   ),

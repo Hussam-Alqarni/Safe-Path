@@ -35,7 +35,12 @@ class SafePathController extends StateNotifier<AppState> {
         ),
         _source = eventSource ??
             SimulatedFleet(tickInterval: const Duration(milliseconds: 900)),
-        super(_initialState(config));
+        super(_initialState(config)) {
+    // The banner follows the data, not the configuration: asking for live
+    // mode does not make a live feed exist, and unlabelled invented positions
+    // are the one failure this product cannot afford.
+    state = state.copyWith(usesSimulatedData: _source.isSimulated);
+  }
 
   final RoutePlanner _planner;
   final JourneyEngine _journey;
@@ -104,7 +109,7 @@ class SafePathController extends StateNotifier<AppState> {
 
     _staleTimer?.cancel();
     _staleTimer =
-        Timer.periodic(const Duration(seconds: 5), (_) => _markStale());
+        Timer.periodic(const Duration(seconds: 5), (_) => runPeriodicChecks());
   }
 
   @override
@@ -307,6 +312,50 @@ class SafePathController extends StateNotifier<AppState> {
         report.busId: live.copyWith(isStale: true),
       },
     );
+    _raiseTrackerSilent(report.tripId, report.busId);
+  }
+
+  /// A bus that has gone dark is a fact the school needs, not just a greyed
+  /// marker on a screen nobody may be watching.
+  void _raiseTrackerSilent(String tripId, String busId) {
+    if (_hasOpenAlert(SafetyAlertKind.trackerSilent, tripId: tripId)) return;
+
+    final plate = _busPlate(busId);
+    state = state.copyWith(
+      alerts: [
+        ...state.alerts,
+        SafetyAlert(
+          id: _id(),
+          schoolId: state.school.id,
+          kind: SafetyAlertKind.trackerSilent,
+          raisedAt: DateTime.now(),
+          titleAr: 'انقطعت إشارة الحافلة $plate',
+          titleEn: 'Lost contact with bus $plate',
+          detailAr: 'توقّف جهاز التتبع عن الإرسال أثناء الرحلة. '
+              'اتصل بالسائق للتأكد من سلامة الرحلة.',
+          detailEn: 'The tracker stopped reporting mid-trip. Call the driver '
+              'to confirm the run is proceeding safely.',
+          tripId: tripId,
+          busId: busId,
+        ),
+      ],
+    );
+  }
+
+  /// One alert per condition per trip. Without this the periodic checks would
+  /// raise the same alarm every few seconds and bury the real ones.
+  bool _hasOpenAlert(
+    SafetyAlertKind kind, {
+    String? tripId,
+    String? studentId,
+  }) {
+    return state.alerts.any(
+      (a) =>
+          a.isOpen &&
+          a.kind == kind &&
+          (tripId == null || a.tripId == tripId) &&
+          (studentId == null || a.studentId == studentId),
+    );
   }
 
   /// Flags positions the app must stop presenting as live.
@@ -326,6 +375,64 @@ class SafePathController extends StateNotifier<AppState> {
       updated[entry.key] = entry.value.copyWith(isStale: stale);
     }
     if (changed) state = state.copyWith(liveByBus: updated);
+  }
+
+  /// The watchdog pass.
+  ///
+  /// Public so tests can run it directly: a check that only ever fires from a
+  /// five-second timer is a check nobody can prove works.
+  void runPeriodicChecks() {
+    _markStale();
+    _checkGateGaps();
+    expireImpersonationIfDue();
+  }
+
+  /// Flags students who left the bus and never reached the gate.
+  ///
+  /// This runs on a timer rather than at trip end because the gap opens while
+  /// the trip is still going: the point is to notice within the grace window,
+  /// not to find out afterwards.
+  void _checkGateGaps() {
+    final now = DateTime.now();
+    final raised = <SafetyAlert>[];
+
+    for (final trip in state.trips) {
+      if (trip.direction != TripDirection.toSchool) continue;
+      if (trip.status == TripStatus.scheduled) continue;
+
+      for (final alert in _journey.detectMissingGateEntries(
+        trip: trip,
+        allEvents: state.attendanceEvents,
+        studentsById: state.studentsById,
+        now: now,
+        idFactory: _id,
+      )) {
+        if (_hasOpenAlert(
+          SafetyAlertKind.missingGateEntry,
+          studentId: alert.studentId,
+        )) {
+          continue;
+        }
+        raised.add(alert);
+      }
+    }
+
+    if (raised.isEmpty) return;
+    state = state.copyWith(alerts: [...state.alerts, ...raised]);
+
+    for (final alert in raised) {
+      final studentId = alert.studentId;
+      if (studentId == null) continue;
+      _notifyGuardians(
+        studentId: studentId,
+        kind: NotificationKind.safetyAlert,
+        titleAr: alert.titleAr,
+        titleEn: alert.titleEn,
+        bodyAr: alert.detailAr,
+        bodyEn: alert.detailEn,
+        at: now,
+      );
+    }
   }
 
   // ── attendance ───────────────────────────────────────────────────────────
@@ -420,6 +527,8 @@ class SafePathController extends StateNotifier<AppState> {
     required String recordedByUserId,
   }) {
     final now = DateTime.now();
+    final trip = state.tripById(tripId);
+
     final record = AbsenceRecord(
       id: _id(),
       schoolId: state.school.id,
@@ -428,6 +537,9 @@ class SafePathController extends StateNotifier<AppState> {
       reason: AbsenceReason.noShowAtStop,
       declaredAt: now,
       declaredByUserId: recordedByUserId,
+      // Scoped to this run only. A child who missed the morning bus is very
+      // often still going home on the afternoon one.
+      direction: trip?.direction,
     );
 
     state = state.copyWith(absences: [...state.absences, record]);
@@ -592,13 +704,30 @@ class SafePathController extends StateNotifier<AppState> {
     );
   }
 
+  /// A guardian withdraws an absence they declared.
+  ///
+  /// Only their own declaration is removed. A driver's no-show is an
+  /// observation of what happened at the stop, not a request — letting a
+  /// guardian delete it would make the record something the people it
+  /// describes can rewrite.
   Future<void> cancelAbsence(String studentId) async {
-    final existing = state.absenceFor(studentId);
-    if (existing == null) return;
+    final declared = state.absencesFor(studentId).where(
+          (a) => a.reason == AbsenceReason.declaredByGuardian,
+        );
+    if (declared.isEmpty) return;
 
+    final removedIds = declared.map((a) => a.id).toSet();
     state = state.copyWith(
-      absences: state.absences.where((a) => a.studentId != studentId).toList(),
+      absences:
+          state.absences.where((a) => !removedIds.contains(a.id)).toList(),
     );
+
+    recordAudit(
+      action: 'absence.cancelled',
+      subjectStudentId: studentId,
+      detail: '${removedIds.length} declared',
+    );
+
     await _replanForStudent(studentId, absent: false);
   }
 
@@ -619,7 +748,14 @@ class SafePathController extends StateNotifier<AppState> {
       }
 
       final tripStop = trip.stops.where((s) => s.stopId == stopId).firstOrNull;
-      if (tripStop == null || tripStop.status.isDone && absent) {
+      // A stop the bus has already reached is never replanned, in either
+      // direction: restoring it would move nextStop backwards and send the
+      // driver back up the road. A *skipped* stop is different — putting it
+      // back is exactly what cancelling an absence has to do.
+      final alreadyServed = tripStop != null &&
+          (tripStop.status == TripStopStatus.arrived ||
+              tripStop.status == TripStopStatus.departed);
+      if (tripStop == null || alreadyServed) {
         updated.add(trip);
         continue;
       }
@@ -682,8 +818,8 @@ class SafePathController extends StateNotifier<AppState> {
       raisedAt: now,
       titleAr: 'استغاثة من الحافلة $plate',
       titleEn: 'Emergency on bus $plate',
-      detailAr: note ??
-          'ضغط السائق زر الاستغاثة أثناء الرحلة. اتصل بالسائق فوراً.',
+      detailAr:
+          note ?? 'ضغط السائق زر الاستغاثة أثناء الرحلة. اتصل بالسائق فوراً.',
       detailEn: note ??
           'The driver pressed the emergency button mid-trip. Call them now.',
       tripId: tripId,
@@ -769,7 +905,7 @@ class SafePathController extends StateNotifier<AppState> {
     final alert = SafetyAlert(
       id: _id(),
       schoolId: state.school.id,
-      kind: SafetyAlertKind.leftSchoolNotOnBus,
+      kind: SafetyAlertKind.guardianDisputed,
       raisedAt: DateTime.now(),
       titleAr: 'ولي أمر اعترض على تسجيل يدوي',
       titleEn: 'Guardian disputed a manual record',
@@ -831,7 +967,7 @@ class SafePathController extends StateNotifier<AppState> {
     );
   }
 
-  void endImpersonation() {
+  void endImpersonation({bool expired = false}) {
     if (state.impersonation == null) return;
     state = state.copyWith(
       clearImpersonation: true,
@@ -842,18 +978,29 @@ class SafePathController extends StateNotifier<AppState> {
           schoolId: state.school.id,
           actorUserId: state.currentUser.id,
           actorRole: state.currentUser.role,
-          action: 'impersonation.end',
+          action: expired ? 'impersonation.expired' : 'impersonation.end',
           occurredAt: DateTime.now(),
         ),
       ],
     );
   }
 
+  /// Writes one line to the access trail.
+  ///
+  /// The actor is always the signed-in account and their real role — never
+  /// the impersonated one. Logging a developer's action as "school admin"
+  /// would hide exactly the access the log exists to record; the borrowed
+  /// role is noted alongside instead.
   void recordAudit({
     required String action,
     String? subjectStudentId,
     String? detail,
   }) {
+    final borrowed = state.impersonation?.role;
+    final note = borrowed == null
+        ? detail
+        : [if (detail != null) detail, 'as ${borrowed.name}'].join(' · ');
+
     state = state.copyWith(
       auditLog: [
         ...state.auditLog,
@@ -861,14 +1008,24 @@ class SafePathController extends StateNotifier<AppState> {
           id: _id(),
           schoolId: state.school.id,
           actorUserId: state.currentUser.id,
-          actorRole: state.effectiveRole,
+          actorRole: state.currentUser.role,
           action: action,
           occurredAt: DateTime.now(),
           subjectStudentId: subjectStudentId,
-          detail: detail,
+          detail: note,
         ),
       ],
     );
+  }
+
+  /// Ends an impersonation session that has run past its hour.
+  ///
+  /// The expiry was written into the session and never enforced, which made
+  /// "time-boxed" a comment rather than a property.
+  void expireImpersonationIfDue() {
+    final session = state.impersonation;
+    if (session == null || !session.isExpired(DateTime.now())) return;
+    endImpersonation(expired: true);
   }
 
   void setLocale(Locale locale) => state = state.copyWith(locale: locale);

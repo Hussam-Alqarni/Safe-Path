@@ -130,9 +130,7 @@ class _HomeLocationFormState extends ConsumerState<_HomeLocationForm> {
       padding: const EdgeInsets.fromLTRB(Gap.lg, 0, Gap.lg, Gap.xl),
       children: [
         Text(
-          s.isArabic
-              ? widget.student.fullNameAr
-              : widget.student.fullNameEn,
+          s.isArabic ? widget.student.fullNameAr : widget.student.fullNameEn,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         Text(
@@ -140,7 +138,6 @@ class _HomeLocationFormState extends ConsumerState<_HomeLocationForm> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: Gap.lg),
-
         Text(
           s.pasteMapLinkExplain,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -148,7 +145,6 @@ class _HomeLocationFormState extends ConsumerState<_HomeLocationForm> {
               ),
         ),
         const SizedBox(height: Gap.lg),
-
         TextField(
           controller: _controller,
           autofocus: true,
@@ -180,7 +176,6 @@ class _HomeLocationFormState extends ConsumerState<_HomeLocationForm> {
           label: Text(_resolving ? s.linkReading : s.linkPreview),
           onPressed: _resolving ? null : _parse,
         ),
-
         if (result != null) ...[
           const SizedBox(height: Gap.xl),
           switch (result) {
@@ -228,7 +223,6 @@ class _Preview extends ConsumerWidget {
           _Warning(message: s.linkFarFromSchool),
           const SizedBox(height: Gap.lg),
         ],
-
         ClipRRect(
           borderRadius: BorderRadius.circular(Radii.md),
           child: SizedBox(
@@ -258,7 +252,6 @@ class _Preview extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: Gap.lg),
-
         if (parsed.label != null) ...[
           _Row(label: s.homeLocation, value: parsed.label!),
           const Divider(height: Gap.lg),
@@ -283,7 +276,6 @@ class _Preview extends ConsumerWidget {
             accent: walk > 600 ? c.manual : c.delivered,
           ),
         ],
-
         const SizedBox(height: Gap.xl),
         FilledButton.icon(
           icon: const Icon(Icons.check_rounded),
@@ -356,9 +348,9 @@ class _Row extends StatelessWidget {
           value,
           textDirection: monospace ? TextDirection.ltr : null,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: accent ?? c.ink,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+            color: accent ?? c.ink,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
         ),
       ],
     );

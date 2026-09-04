@@ -211,8 +211,14 @@ class _AttendanceTrendPanel extends ConsumerWidget {
       date: DateTime.now(),
     );
 
+    // Seed history is a demo prop. Drawing it beside a real measurement in a
+    // live deployment would be the app inventing a fortnight of attendance.
+    final history = state.usesSimulatedData
+        ? SeedData.demoAttendanceHistory
+        : const <({DateTime date, int expected, int present, int manual})>[];
+
     final points = <TrendPoint>[
-      for (final day in SeedData.demoAttendanceHistory)
+      for (final day in history)
         TrendPoint(
           label: _weekday(context, day.date),
           value: day.present / day.expected,
@@ -266,7 +272,8 @@ class _DriverReliabilityPanel extends ConsumerWidget {
             RankedBar(
               label: s.isArabic
                   ? SeedData.usersById[row.driverId]?.fullNameAr ?? row.driverId
-                  : SeedData.usersById[row.driverId]?.fullNameEn ?? row.driverId,
+                  : SeedData.usersById[row.driverId]?.fullNameEn ??
+                      row.driverId,
               value: row.manualRate,
               display: '${(row.manualRate * 100).round()}%',
               // Above a fifth, a human should look at the reader before the
@@ -446,9 +453,8 @@ class _GapRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
     final c = context.colors;
-    final stop = student.stopId == null
-        ? null
-        : SeedData.stopsById[student.stopId];
+    final stop =
+        student.stopId == null ? null : SeedData.stopsById[student.stopId];
 
     return InkWell(
       onTap: () => showStudentDetail(context, ref, student.id),

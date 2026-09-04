@@ -18,8 +18,7 @@ final appConfigProvider = Provider<AppConfig>(
 
 // StateNotifierProvider disposes the notifier it creates, so registering an
 // extra onDispose here would call dispose twice and throw.
-final controllerProvider =
-    StateNotifierProvider<SafePathController, AppState>(
+final controllerProvider = StateNotifierProvider<SafePathController, AppState>(
   (ref) => SafePathController(config: ref.watch(appConfigProvider)),
 );
 
@@ -51,7 +50,8 @@ final studentsProvider = Provider<List<Student>>(
 /// but not on every position report — and a report arrives every few seconds.
 /// Riverpod only notifies when a value changes, so depending on this instead
 /// of the trip means the expensive work runs when the plan does.
-final tripPlanSignatureProvider = Provider.family<String, String>((ref, tripId) {
+final tripPlanSignatureProvider =
+    Provider.family<String, String>((ref, tripId) {
   final trip = ref.watch(controllerProvider).tripById(tripId);
   if (trip == null) return 'none';
   final served = trip.stops.where((s) => s.status != TripStopStatus.skipped);

@@ -86,8 +86,7 @@ class _DriverNavigationScreenState
                   padding: const EdgeInsets.all(Gap.md),
                   child: _GuidanceBanner(
                     steps: steps,
-                    distanceAlongRoute:
-                        live?.distanceAlongRouteMetres ?? 0,
+                    distanceAlongRoute: live?.distanceAlongRouteMetres ?? 0,
                     stale: live?.isStale ?? true,
                   ),
                 ),
@@ -105,8 +104,7 @@ class _DriverNavigationScreenState
                   child: _NavigationControls(
                     trip: trip,
                     trafficOn: _traffic,
-                    onToggleTraffic: () =>
-                        setState(() => _traffic = !_traffic),
+                    onToggleTraffic: () => setState(() => _traffic = !_traffic),
                   ),
                 ),
               ),
@@ -171,29 +169,22 @@ class _GuidanceBanner extends StatelessWidget {
                         // Distance first, the way a driver reads it: how far,
                         // then what to do.
                         s.metres(guidance.metresToManeuver.round()),
-                        style: Theme.of(context)
-                            .textTheme
-                            .displaySmall
-                            ?.copyWith(
-                              color: guidance.isImminent
-                                  ? Colors.white
-                                  : c.ink,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
+                        style:
+                            Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: guidance.isImminent ? Colors.white : c.ink,
+                          fontFeatures: const [
+                            FontFeature.tabularFigures(),
+                          ],
+                        ),
                       ),
                       Text(
-                        stopName ??
-                            s.maneuverLabel(guidance.current.maneuver),
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(
-                              color: guidance.isImminent
-                                  ? Colors.white
-                                  : c.inkSoft,
-                            ),
+                        stopName ?? s.maneuverLabel(guidance.current.maneuver),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: guidance.isImminent
+                                      ? Colors.white
+                                      : c.inkSoft,
+                                ),
                       ),
                     ],
                   ),
@@ -207,16 +198,14 @@ class _GuidanceBanner extends StatelessWidget {
                   Text(
                     s.thenNext,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: guidance.isImminent
-                              ? Colors.white70
-                              : c.inkMuted,
+                          color:
+                              guidance.isImminent ? Colors.white70 : c.inkMuted,
                         ),
                   ),
                   const SizedBox(width: Gap.sm),
                   _ManeuverIcon(
                     maneuver: guidance.next!.maneuver,
-                    color:
-                        guidance.isImminent ? Colors.white70 : c.inkSoft,
+                    color: guidance.isImminent ? Colors.white70 : c.inkSoft,
                     size: 18,
                   ),
                   const SizedBox(width: Gap.xs),
@@ -247,9 +236,8 @@ class _GuidanceBanner extends StatelessWidget {
                     child: Text(
                       s.signalLost,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: guidance.isImminent
-                                ? Colors.white70
-                                : c.manual,
+                            color:
+                                guidance.isImminent ? Colors.white70 : c.manual,
                           ),
                     ),
                   ),
@@ -313,9 +301,7 @@ class _NavigationControls extends ConsumerWidget {
     final s = AppStrings.of(context);
     final c = context.colors;
     final nextStop = trip.nextStop;
-    final stop = nextStop == null
-        ? null
-        : SeedData.stopsById[nextStop.stopId];
+    final stop = nextStop == null ? null : SeedData.stopsById[nextStop.stopId];
 
     return Material(
       elevation: 6,
@@ -353,7 +339,9 @@ class _NavigationControls extends ConsumerWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: Icon(
-                      trafficOn ? Icons.traffic_rounded : Icons.traffic_outlined,
+                      trafficOn
+                          ? Icons.traffic_rounded
+                          : Icons.traffic_outlined,
                       size: 18,
                       color: trafficOn ? c.brand : c.inkSoft,
                     ),

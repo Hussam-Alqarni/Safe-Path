@@ -90,7 +90,7 @@ class _RoleShellState extends ConsumerState<RoleShell> {
         ),
         body: Column(
           children: [
-            if (state.config.isDemo) const DemoBanner(),
+            if (state.usesSimulatedData) const DemoBanner(),
             if (state.isImpersonating) const _ImpersonationBar(),
             Expanded(
               child: Container(

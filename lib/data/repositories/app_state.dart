@@ -81,6 +81,7 @@ class AppState {
     required this.themeMode,
     this.impersonation,
     this.simulationRunning = false,
+    this.usesSimulatedData = true,
   }) : studentsById = {for (final s in students) s.id: s};
 
   final AppConfig config;
@@ -109,6 +110,14 @@ class AppState {
   final ThemeMode themeMode;
   final ImpersonationSession? impersonation;
   final bool simulationRunning;
+
+  /// Whether the positions on screen came from a simulator.
+  ///
+  /// Derived from the live data source, not from a configuration flag. Intent
+  /// and reality can differ — asking for live mode does not conjure a live
+  /// feed — and the one thing this app must never do is present invented
+  /// positions as though a bus reported them.
+  final bool usesSimulatedData;
 
   /// The role whose screens are being shown.
   UserRole get effectiveRole => impersonation?.role ?? currentUser.role;
@@ -149,11 +158,36 @@ class AppState {
     return list;
   }
 
-  AbsenceRecord? absenceFor(String studentId) {
+  /// Today's absence for a student, optionally scoped to one run.
+  ///
+  /// Both filters matter. Without the date, an absence recorded last Tuesday
+  /// keeps a child off the bus for the rest of the year. Without the
+  /// direction, a morning no-show also strikes them off the afternoon run —
+  /// and a guardian who only wants the ride home cancelled cannot say so.
+  AbsenceRecord? absenceFor(
+    String studentId, {
+    TripDirection? direction,
+    DateTime? on,
+  }) {
+    final day = on ?? DateTime.now();
+    final date = DateTime(day.year, day.month, day.day);
+
     for (final absence in absences) {
-      if (absence.studentId == studentId) return absence;
+      if (absence.studentId != studentId) continue;
+      if (absence.serviceDate != date) continue;
+      if (direction != null && !absence.appliesTo(direction)) continue;
+      return absence;
     }
     return null;
+  }
+
+  /// Every absence recorded for a student today, in any direction.
+  List<AbsenceRecord> absencesFor(String studentId, {DateTime? on}) {
+    final day = on ?? DateTime.now();
+    final date = DateTime(day.year, day.month, day.day);
+    return absences
+        .where((a) => a.studentId == studentId && a.serviceDate == date)
+        .toList();
   }
 
   List<Student> studentsForStop(String stopId) =>
@@ -174,6 +208,7 @@ class AppState {
     ImpersonationSession? impersonation,
     bool clearImpersonation = false,
     bool? simulationRunning,
+    bool? usesSimulatedData,
   }) {
     return AppState(
       config: config,
@@ -192,6 +227,7 @@ class AppState {
       impersonation:
           clearImpersonation ? null : (impersonation ?? this.impersonation),
       simulationRunning: simulationRunning ?? this.simulationRunning,
+      usesSimulatedData: usesSimulatedData ?? this.usesSimulatedData,
     );
   }
 }
