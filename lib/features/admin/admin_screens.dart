@@ -5,10 +5,12 @@ import 'package:safe_path/core/theme/app_colors.dart';
 import 'package:safe_path/core/theme/app_theme.dart';
 import 'package:safe_path/data/repositories/providers.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
+import 'package:safe_path/domain/enums.dart';
 import 'package:safe_path/domain/models/entities.dart';
 import 'package:safe_path/features/map/bus_position_animator.dart';
 import 'package:safe_path/features/map/map_view.dart';
 import 'package:safe_path/features/students/student_detail_sheet.dart';
+import 'package:safe_path/shared/widgets/call_action.dart';
 import 'package:safe_path/shared/widgets/common.dart';
 
 /// Every bus on one screen.
@@ -248,6 +250,45 @@ class _AlertCard extends ConsumerWidget {
 
   final SafetyAlert alert;
 
+  /// Who to phone about this alert.
+  ///
+  /// Only on an emergency: every other alert is handled inside the app, and a
+  /// dial button on all of them would train the office to ignore it on the
+  /// one that matters. The driver first — they are standing next to whatever
+  /// went wrong — then the contractor who can send another bus.
+  List<Widget> _contacts(BuildContext context, WidgetRef ref) {
+    if (alert.kind != SafetyAlertKind.emergency) return const [];
+    final s = AppStrings.of(context);
+    final busId = alert.busId;
+    if (busId == null) return const [];
+
+    final driver = SeedData.allUsers
+        .where((u) => u.role == UserRole.driver && u.assignedBusId == busId)
+        .firstOrNull;
+    final operator_ = SeedData.operatorForBus(busId);
+
+    return [
+      const SizedBox(height: Gap.md),
+      Wrap(
+        spacing: Gap.sm,
+        runSpacing: Gap.sm,
+        children: [
+          if (driver != null)
+            CallAction(
+              label: s.callDriver,
+              phoneNumber: driver.phone,
+              emphasis: true,
+            ),
+          if (operator_ != null)
+            CallAction(
+              label: s.callOperator,
+              phoneNumber: operator_.contactPhone,
+            ),
+        ],
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
@@ -299,6 +340,7 @@ class _AlertCard extends ConsumerWidget {
                   s.isArabic ? alert.detailAr : alert.detailEn,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                ..._contacts(context, ref),
                 const SizedBox(height: Gap.lg),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.check_rounded, size: 18),

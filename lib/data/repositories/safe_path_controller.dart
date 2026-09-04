@@ -555,6 +555,48 @@ class SafePathController extends StateNotifier<AppState> {
     );
   }
 
+  /// Undoes a no-show the driver tapped by mistake.
+  ///
+  /// One stray tap against a seat marks a child absent and fires a
+  /// "did not board" notification at their guardian; without a counterpart
+  /// the driver's only recourse is to phone the office. Scoped to no-shows
+  /// only — a driver must never be able to erase an absence the guardian
+  /// declared — and the guardian is told, because they already read the
+  /// alarming version.
+  void cancelNoShow({required String studentId, required String tripId}) {
+    final trip = state.tripById(tripId);
+    final removed = state.absencesFor(studentId).where(
+          (a) =>
+              a.reason == AbsenceReason.noShowAtStop &&
+              (trip == null || a.direction == trip.direction),
+        );
+    if (removed.isEmpty) return;
+
+    final removedIds = removed.map((a) => a.id).toSet();
+    state = state.copyWith(
+      absences:
+          state.absences.where((a) => !removedIds.contains(a.id)).toList(),
+    );
+
+    recordAudit(
+      action: 'noShow.cancelled',
+      subjectStudentId: studentId,
+      detail: tripId,
+    );
+
+    _notifyGuardians(
+      studentId: studentId,
+      kind: NotificationKind.noShow,
+      titleAr: 'تصحيح: تراجع السائق عن تسجيل عدم الصعود',
+      titleEn: 'Correction: the no-show was withdrawn',
+      bodyAr: 'أُلغي تسجيل عدم صعود ${_studentName(studentId)}. '
+          'إن لم يكن هذا صحيحاً فتواصل مع المدرسة.',
+      bodyEn: 'The no-show recorded for ${_studentNameEn(studentId)} has been '
+          'withdrawn. Contact the school if that looks wrong.',
+      at: DateTime.now(),
+    );
+  }
+
   bool _isOnBoard({required String studentId, required String tripId}) {
     var onBoard = false;
     for (final event in state.attendanceEvents) {

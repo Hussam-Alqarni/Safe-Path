@@ -425,12 +425,60 @@ class _StudentActionRow extends ConsumerWidget {
         );
   }
 
-  void _markNoShow(BuildContext context, WidgetRef ref, Student student) {
-    ref.read(controllerProvider.notifier).markNoShow(
-          studentId: student.id,
-          tripId: trip.id,
-          recordedByUserId: ref.read(controllerProvider).currentUser.id,
-        );
+  /// Marking a child absent is the one destructive tap on this screen.
+  ///
+  /// It fires a "did not board" notification at a guardian who is not on the
+  /// bus and cannot check for themselves, so it gets both guards a dangerous
+  /// control deserves: a confirmation before, and an undo after. Neither
+  /// alone is enough — a dialog is easy to dismiss on a bumping dashboard,
+  /// and an undo that scrolls away is no undo at all.
+  Future<void> _markNoShow(
+    BuildContext context,
+    WidgetRef ref,
+    Student student,
+  ) async {
+    final s = AppStrings.of(context);
+    final name = s.isArabic ? student.fullNameAr : student.fullNameEn;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(s.noShowConfirmTitle),
+        content: Text(s.noShowConfirmBody(name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(s.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(s.confirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final controller = ref.read(controllerProvider.notifier);
+    controller.markNoShow(
+      studentId: student.id,
+      tripId: trip.id,
+      recordedByUserId: ref.read(controllerProvider).currentUser.id,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(s.noShowRecorded(name)),
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: s.noShowUndo,
+          onPressed: () => controller.cancelNoShow(
+            studentId: student.id,
+            tripId: trip.id,
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -88,6 +88,19 @@ abstract class AppStrings {
   String get emergencyRaised;
   String get emergencyTitle;
   String emergencyBody(String plate);
+
+  // ── reaching a person ────────────────────────────────────────────────────
+  String get contactsTitle;
+  String get callOperator;
+  String get callDriver;
+  String get callFailed;
+
+  // ── no-show ──────────────────────────────────────────────────────────────
+  String get noShowConfirmTitle;
+  String noShowConfirmBody(String studentName);
+  String noShowRecorded(String studentName);
+  String get noShowUndo;
+  String get noShowUndone;
   String get alertsNone;
   String get alertAcknowledge;
   String get alertAcknowledged;
@@ -343,6 +356,27 @@ class ArabicStrings extends AppStrings {
   @override
   String emergencyBody(String plate) =>
       'ضغط سائق الحافلة $plate زر الاستغاثة. الإدارة أُبلغت وتتابع الموقف.';
+
+  @override
+  String get contactsTitle => 'أرقام الاتصال';
+  @override
+  String get callOperator => 'الاتصال بشركة النقل';
+  @override
+  String get callDriver => 'الاتصال بالسائق';
+  @override
+  String get callFailed => 'هذا الجهاز لا يجري مكالمات — نُسخ الرقم';
+
+  @override
+  String get noShowConfirmTitle => 'تسجيل عدم صعود؟';
+  @override
+  String noShowConfirmBody(String studentName) =>
+      'سيُسجَّل $studentName غائباً عن هذه الرحلة، ويصل إشعار لولي أمره فوراً.';
+  @override
+  String noShowRecorded(String studentName) => 'سُجِّل عدم صعود $studentName';
+  @override
+  String get noShowUndo => 'تراجع';
+  @override
+  String get noShowUndone => 'أُلغي تسجيل عدم الصعود';
 
   @override
   String get alertsNone => 'لا توجد تنبيهات مفتوحة';
@@ -790,6 +824,29 @@ class EnglishStrings extends AppStrings {
   String emergencyBody(String plate) =>
       'The driver of bus $plate raised an emergency. The school has been '
       'notified and is handling it.';
+
+  @override
+  String get contactsTitle => 'Contacts';
+  @override
+  String get callOperator => 'Call the transport company';
+  @override
+  String get callDriver => 'Call the driver';
+  @override
+  String get callFailed => 'This device cannot place calls — number copied';
+
+  @override
+  String get noShowConfirmTitle => 'Mark as not boarded?';
+  @override
+  String noShowConfirmBody(String studentName) =>
+      '$studentName will be recorded absent for this run, and their guardian '
+      'is notified straight away.';
+  @override
+  String noShowRecorded(String studentName) =>
+      '$studentName recorded as not boarded';
+  @override
+  String get noShowUndo => 'Undo';
+  @override
+  String get noShowUndone => 'No-show record removed';
 
   @override
   String get alertsNone => 'No open alerts';

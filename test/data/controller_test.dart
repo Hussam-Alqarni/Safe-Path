@@ -818,6 +818,96 @@ void main() {
       );
     });
 
+    test('a driver can undo their own no-show', () async {
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      controller.markNoShow(
+        studentId: studentId,
+        tripId: trip.id,
+        recordedByUserId: 'driver-north',
+      );
+      controller.cancelNoShow(studentId: studentId, tripId: trip.id);
+
+      expect(controller.state.absencesFor(studentId), isEmpty);
+      expect(
+        controller.state.auditLog.map((e) => e.action),
+        contains('noShow.cancelled'),
+      );
+    });
+
+    test('undoing a no-show tells the guardian who got the alarm', () async {
+      // The guardian already read "did not board". Silently deleting the
+      // record leaves them believing the frightening version.
+      final trip = northTrip();
+      await controller.startTrip(trip.id);
+      final studentId = trip.expectedStudentIds.first;
+
+      controller.markNoShow(
+        studentId: studentId,
+        tripId: trip.id,
+        recordedByUserId: 'driver-north',
+      );
+      final before = controller.state.notifications.length;
+      controller.cancelNoShow(studentId: studentId, tripId: trip.id);
+
+      expect(controller.state.notifications.length, greaterThan(before));
+    });
+
+    test('undoing a no-show cannot erase a declared absence', () async {
+      // Same guard in the other direction: the driver's undo is scoped to
+      // what the driver recorded.
+      final trip = northTrip();
+      final studentId = trip.expectedStudentIds.first;
+      await controller.declareAbsence(
+        studentId: studentId,
+        declaredByUserId: 'guardian-demo',
+      );
+
+      controller.cancelNoShow(studentId: studentId, tripId: trip.id);
+
+      final remaining = controller.state.absencesFor(studentId);
+      expect(remaining, hasLength(1));
+      expect(remaining.single.reason, AbsenceReason.declaredByGuardian);
+    });
+
+    test('undoing a no-show leaves the other run alone', () async {
+      // Both runs can carry a no-show; undoing the morning one must not
+      // quietly put the child back on the afternoon bus.
+      final morning = northTrip();
+      final afternoon = controller.state.trips.firstWhere(
+        (t) =>
+            t.busId == 'bus-north' && t.direction == TripDirection.fromSchool,
+      );
+      final studentId = morning.expectedStudentIds.first;
+
+      await controller.startTrip(morning.id);
+      controller.markNoShow(
+        studentId: studentId,
+        tripId: morning.id,
+        recordedByUserId: 'driver-north',
+      );
+      controller.markNoShow(
+        studentId: studentId,
+        tripId: afternoon.id,
+        recordedByUserId: 'driver-north',
+      );
+
+      controller.cancelNoShow(studentId: studentId, tripId: morning.id);
+
+      expect(
+        controller.state
+            .absenceFor(studentId, direction: TripDirection.toSchool),
+        isNull,
+      );
+      expect(
+        controller.state
+            .absenceFor(studentId, direction: TripDirection.fromSchool),
+        isNotNull,
+      );
+    });
+
     test('yesterday\'s absence does not keep a child off today\'s bus', () {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
       expect(

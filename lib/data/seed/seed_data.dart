@@ -314,6 +314,16 @@ abstract final class SeedData {
 
   static Map<String, Bus> get busesById => {for (final b in buses) b.id: b};
 
+  static const operators = <TransportOperator>[operator_];
+
+  static Map<String, TransportOperator> get operatorsById =>
+      {for (final o in operators) o.id: o};
+
+  /// The contractor responsible for a bus — who the school calls when that
+  /// bus is in trouble. Buses hang off the operator, not off the school.
+  static TransportOperator? operatorForBus(String busId) =>
+      operatorsById[busesById[busId]?.operatorId];
+
   static Map<String, AppUser> get usersById =>
       {for (final u in allUsers) u.id: u};
 

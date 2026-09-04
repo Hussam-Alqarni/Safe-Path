@@ -5,6 +5,9 @@ import 'package:safe_path/core/i18n/strings.dart';
 import 'package:safe_path/core/theme/app_colors.dart';
 import 'package:safe_path/core/theme/app_theme.dart';
 import 'package:safe_path/data/repositories/providers.dart';
+import 'package:safe_path/data/seed/seed_data.dart';
+import 'package:safe_path/domain/enums.dart';
+import 'package:safe_path/shared/widgets/call_action.dart';
 
 /// The driver's call for help.
 ///
@@ -83,12 +86,48 @@ class _EmergencyButtonState extends ConsumerState<EmergencyButton>
     _hold.reverse();
   }
 
+  /// The contractor's number, shown only once help has actually been called.
+  ///
+  /// Before that it is clutter on a driving screen; after it, it is the one
+  /// thing a driver needs and cannot be asked to go looking for. The alert
+  /// log is the source, not this widget's own [_sent] flag — a driver who
+  /// reopens the screen mid-incident must still find the number.
+  Widget? _operatorCall(BuildContext context) {
+    final state = ref.watch(controllerProvider);
+    final trip = state.tripById(widget.tripId);
+    if (trip == null) return null;
+
+    final live = state.alerts.any(
+      (a) =>
+          a.isOpen &&
+          a.kind == SafetyAlertKind.emergency &&
+          a.tripId == widget.tripId,
+    );
+    if (!live) return null;
+
+    final operator_ = SeedData.operatorForBus(trip.busId);
+    if (operator_ == null) return null;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Gap.sm),
+      child: SizedBox(
+        width: double.infinity,
+        child: CallAction(
+          label: AppStrings.of(context).callOperator,
+          phoneNumber: operator_.contactPhone,
+          emphasis: true,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
     final c = context.colors;
+    final call = _operatorCall(context);
 
-    return Semantics(
+    final button = Semantics(
       button: true,
       label: s.emergencyButton,
       hint: s.emergencyHold,
@@ -148,6 +187,9 @@ class _EmergencyButtonState extends ConsumerState<EmergencyButton>
         ),
       ),
     );
+
+    if (call == null) return button;
+    return Column(mainAxisSize: MainAxisSize.min, children: [button, call]);
   }
 }
 

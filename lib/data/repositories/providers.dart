@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safe_path/core/config/app_config.dart';
+import 'package:safe_path/core/platform/dialer.dart';
 import 'package:safe_path/data/repositories/app_state.dart';
 import 'package:safe_path/data/repositories/safe_path_controller.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
@@ -33,6 +34,10 @@ final linkParserProvider = Provider<LocationLinkParser>((ref) {
   final school = ref.watch(controllerProvider).school;
   return LocationLinkParser(expectedCentre: school.location);
 });
+
+/// Overridden in tests, and by any deployment that routes calls through a
+/// switchboard rather than the device dialler.
+final dialerProvider = Provider<Dialer>((ref) => const UrlLauncherDialer());
 
 final shortLinkResolverProvider = Provider<ShortLinkResolver>((ref) {
   final resolver = HttpShortLinkResolver();

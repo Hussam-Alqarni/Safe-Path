@@ -24,6 +24,12 @@ dependencies:
   # Expands shortened map links a guardian pastes.
   http: ^1.2.2
 
+  # Places the call to the transport operator from inside an emergency.
+  url_launcher: ^6.3.1
+
+  # Local persistence. The safety log must survive an app restart.
+  shared_preferences: ^2.3.3
+
   # Utilities
   intl: any
   collection: ^1.19.0
