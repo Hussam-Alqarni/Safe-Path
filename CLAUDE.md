@@ -5,7 +5,7 @@ School transport safety platform. Arabic-first, bilingual (ar/en), RTL.
 ## Commands
 
 ```bash
-flutter test          # 188 tests — keep them green
+flutter test          # 211 tests — keep them green
 dart analyze          # must stay clean; the repo has no warnings
 dart format lib test
 flutter run           # demo mode: no key, no backend, no hardware
@@ -15,7 +15,8 @@ flutter run           # demo mode: no key, no backend, no hardware
 
 - `lib/domain/` — pure Dart, no Flutter import. The safety rules live here and
   are meant to move to a server unchanged. Test everything added here.
-- `lib/data/` — seed data, the fleet simulator, app state and the controller.
+- `lib/data/` — seed data, the fleet simulator, app state, the controller, and
+  `persistence/` (the local store and its wire format).
 - `lib/features/` — one folder per role, plus `map/`.
 - `lib/core/` — theme, strings, config.
 
@@ -47,7 +48,22 @@ product unsafe or unauditable.
     exactly the access the log exists to record.
 11. **A guardian cannot delete a driver's observation.** `cancelAbsence`
     removes only what the guardian declared; a no-show is a record of what
-    happened at the stop.
+    happened at the stop. The driver's own `cancelNoShow` is the mirror of
+    this — scoped to their own record, on the run it was made.
+12. **A stored position is never restored.** `PersistedSnapshot` has no place
+    to put one. On a cold start the map has no bus until a real ping arrives,
+    which is the truth. This is rule 4 at the persistence layer.
+13. **A restored day is scoped to that day.** `JourneyEngine` reads the log it
+    is given and cannot tell that the log is stale, so yesterday's boardings
+    are dropped on load. Home pins, language and theme carry over; the day's
+    records do not.
+14. **Enums are persisted by name and unknown names are dropped**, never
+    mapped to an index. One unreadable record costs that record; a corrupt
+    file costs a clean start, never a crash.
+15. **A destructive tap gets a confirmation and an undo.** Marking a child
+    absent notifies a guardian who cannot check for themselves. A dialog is
+    easy to dismiss on a bumping dashboard and an undo that scrolls away is
+    no undo at all, so both.
 
 ## Conventions
 
@@ -56,8 +72,14 @@ product unsafe or unauditable.
   critical) carry meaning and are never reused as decoration.
 - Spacing from `Gap`, radii from `Radii`.
 - New external service? Put it behind an interface, like `FleetEventSource`,
-  `RoutingService` and `NavigationService`, so it can be swapped without
-  touching callers.
+  `RoutingService`, `NavigationService`, `LocalStore` and `Dialer`, so it can
+  be swapped without touching callers. The device implementations are wired in
+  exactly one place — `main()`. Everything else gets the inert default, so a
+  test can never write a child's movements to a machine that should not hold
+  them.
+- Declare a platform permission with the code that needs it, never before. An
+  unused permission is a question at Play review and a line in a school's
+  privacy assessment that nobody can answer.
 - Charts are single-series by default. Before shipping any categorical palette,
   run the dataviz validator — the app's own state colours fail it, which is why
   the state breakdown is four tiles rather than one stacked bar.
@@ -73,3 +95,7 @@ product unsafe or unauditable.
   The animation ticker stops when there is no motion, but a moving bus is by
   definition never settled.
 - `bootstrap()` is safe to call twice; the app calls it on its first frame.
+- Persistence is debounced. Tests call `flushPersistence()` rather than waiting
+  on a timer — a rule that only holds under a timer nobody can drive is a rule
+  nobody can check. `InMemoryLocalStore.saveCount` proves the writer skips the
+  work when nothing worth keeping changed.

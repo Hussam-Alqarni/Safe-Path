@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safe_path/core/config/app_config.dart';
+import 'package:safe_path/data/persistence/local_store.dart';
+import 'package:safe_path/data/persistence/persisted_snapshot.dart';
 import 'package:safe_path/data/repositories/app_state.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
 import 'package:safe_path/data/simulation/simulated_fleet.dart';
@@ -25,7 +28,9 @@ class SafePathController extends StateNotifier<AppState> {
   SafePathController({
     required AppConfig config,
     FleetEventSource? eventSource,
-  })  : _planner = const RoutePlanner(LocalGeometryRoutingService()),
+    LocalStore? store,
+  })  : _store = store ?? InMemoryLocalStore(),
+        _planner = const RoutePlanner(LocalGeometryRoutingService()),
         _journey = JourneyEngine(
           gateEntryGrace: Duration(minutes: config.gateEntryGraceMinutes),
         ),
@@ -42,6 +47,7 @@ class SafePathController extends StateNotifier<AppState> {
     state = state.copyWith(usesSimulatedData: _source.isSimulated);
   }
 
+  final LocalStore _store;
   final RoutePlanner _planner;
   final JourneyEngine _journey;
   final EtaEngine _eta;
@@ -51,6 +57,20 @@ class SafePathController extends StateNotifier<AppState> {
   StreamSubscription<FleetEvent>? _subscription;
   Timer? _staleTimer;
   Future<void>? _bootstrapping;
+
+  Timer? _persistTimer;
+  void Function()? _stopWatching;
+
+  /// The last thing written, minus its timestamp. A trip in progress changes
+  /// state several times a second and almost none of those changes are
+  /// persisted fields; comparing means the disk is touched when something
+  /// worth keeping actually changed.
+  String? _lastPersisted;
+
+  /// Set by [clearPersistence]. Without it the next state change would write
+  /// the day straight back and the wipe would not survive to the restart it
+  /// promises.
+  bool _persistDisabled = false;
 
   String _id() => _uuid.v4();
 
@@ -84,6 +104,13 @@ class SafePathController extends StateNotifier<AppState> {
     final today = DateTime.now();
     final serviceDate = DateTime(today.year, today.month, today.day);
 
+    // Restore before planning: the plan depends on who is absent, and a stop
+    // whose every student stayed home should come back skipped rather than be
+    // driven to and then skipped again.
+    final restored = await _store.load();
+    final sameDay = restored != null && restored.isFromServiceDate(today);
+    if (restored != null) _restore(restored, sameDay: sameDay);
+
     final trips = <Trip>[];
     for (final route in SeedData.routes) {
       // Both runs are built up front, the way a nightly scheduler would: a
@@ -102,7 +129,19 @@ class SafePathController extends StateNotifier<AppState> {
       );
     }
 
-    state = state.copyWith(trips: trips);
+    // What actually happened is replayed onto the fresh plan: a driver whose
+    // tablet died halfway through a run comes back to a trip in progress with
+    // the stops they already served behind them, not to a run that never
+    // started.
+    final progress = sameDay
+        ? {for (final p in restored.tripProgress) p.tripId: p}
+        : const <String, TripProgress>{};
+
+    state = state.copyWith(
+      trips: [
+        for (final trip in trips) progress[trip.id]?.applyTo(trip) ?? trip,
+      ],
+    );
 
     await _subscription?.cancel();
     _subscription = _source.events.listen(_onFleetEvent);
@@ -110,10 +149,119 @@ class SafePathController extends StateNotifier<AppState> {
     _staleTimer?.cancel();
     _staleTimer =
         Timer.periodic(const Duration(seconds: 5), (_) => runPeriodicChecks());
+
+    // Only now: restoring a snapshot must not immediately write it back, and
+    // a half-built state must never reach the disk.
+    _lastPersisted = _fingerprint(_snapshot());
+    _stopWatching?.call();
+    _stopWatching =
+        addListener((_) => _schedulePersist(), fireImmediately: false);
+  }
+
+  // ── persistence ──────────────────────────────────────────────────────────
+
+  /// Puts a stored snapshot back into memory.
+  ///
+  /// Two different lifetimes are at play. Preferences and the edits made to a
+  /// student — their home pin, the stop they were moved to — belong to the
+  /// person and carry over indefinitely. The day's records do not: replaying
+  /// yesterday's boardings into today would show every guardian their child
+  /// safely at school before the bus has left, because the journey engine
+  /// reads the log it is given and has no way to know the log is stale.
+  void _restore(PersistedSnapshot snapshot, {required bool sameDay}) {
+    final overrides = {
+      for (final o in snapshot.studentOverrides) o.studentId: o,
+    };
+    final students = [
+      for (final student in state.students)
+        overrides[student.id]?.applyTo(student) ?? student,
+    ];
+
+    final localeCode = snapshot.localeCode;
+    final themeMode = ThemeMode.values
+        .where((m) => m.name == snapshot.themeModeName)
+        .firstOrNull;
+    final user = SeedData.usersById[snapshot.currentUserId];
+
+    state = state.copyWith(
+      students: students,
+      locale: localeCode == null ? null : Locale(localeCode),
+      themeMode: themeMode,
+      currentUser: user,
+      // An impersonation session is never restored. It is time-boxed by
+      // design, and a privileged view that survives a restart is a back door.
+      clearImpersonation: true,
+      attendanceEvents: sameDay ? snapshot.attendanceEvents : const [],
+      absences: sameDay ? snapshot.absences : const [],
+      alerts: sameDay ? snapshot.alerts : const [],
+      notifications: sameDay ? snapshot.notifications : const [],
+      auditLog: sameDay ? snapshot.auditLog : const [],
+    );
+  }
+
+  PersistedSnapshot _snapshot() => PersistedSnapshot(
+        savedAt: DateTime.now(),
+        attendanceEvents: state.attendanceEvents,
+        absences: state.absences,
+        alerts: state.alerts,
+        notifications: state.notifications,
+        auditLog: state.auditLog,
+        studentOverrides: [
+          for (final student in state.students)
+            if (SeedData.studentsById[student.id] case final seed?)
+              if (StudentOverride.from(student, seed) case final o?) o,
+        ],
+        tripProgress: state.trips.map(TripProgress.from).toList(),
+        localeCode: state.locale.languageCode,
+        themeModeName: state.themeMode.name,
+        currentUserId: state.currentUser.id,
+      );
+
+  /// Everything but the timestamp — otherwise every comparison differs.
+  String _fingerprint(PersistedSnapshot snapshot) =>
+      jsonEncode(snapshot.toJson()..remove('savedAt'));
+
+  void _schedulePersist() {
+    if (_persistDisabled) return;
+    _persistTimer?.cancel();
+    _persistTimer = Timer(
+      const Duration(milliseconds: 900),
+      () => unawaited(flushPersistence()),
+    );
+  }
+
+  /// Writes now rather than on the next debounce tick.
+  ///
+  /// Public because a test that cannot wait for a timer still has to be able
+  /// to prove the write happened — and a rule that only holds under a timer
+  /// nobody can drive is a rule nobody can check.
+  Future<void> flushPersistence() async {
+    _persistTimer?.cancel();
+    if (_persistDisabled) return;
+    final snapshot = _snapshot();
+    final fingerprint = _fingerprint(snapshot);
+    if (fingerprint == _lastPersisted) return;
+    _lastPersisted = fingerprint;
+    await _store.save(snapshot);
+  }
+
+  /// Forgets everything kept on this device. The developer tools' reset, and
+  /// what a school would call when a tablet leaves the fleet.
+  Future<void> clearPersistence() async {
+    _persistTimer?.cancel();
+    _persistDisabled = true;
+    _lastPersisted = null;
+    await _store.clear();
   }
 
   @override
   void dispose() {
+    _stopWatching?.call();
+    _stopWatching = null;
+    // A pending debounce holds the last few seconds of a trip. Closing the
+    // app is exactly when those seconds matter.
+    unawaited(flushPersistence());
+    _persistTimer?.cancel();
     unawaited(_subscription?.cancel());
     _staleTimer?.cancel();
     unawaited(_source.stop());

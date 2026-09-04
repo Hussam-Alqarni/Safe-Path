@@ -217,6 +217,9 @@ abstract class AppStrings {
   String get devTriggerNoShow;
   String get devSpeedUp;
   String get devReset;
+  String get devClearStored;
+  String get devClearStoredNote;
+  String get devClearStoredDone;
   String get devEventLog;
 
   // ── generic ──────────────────────────────────────────────────────────────
@@ -639,6 +642,15 @@ class ArabicStrings extends AppStrings {
   String get devSpeedUp => 'تسريع';
   @override
   String get devReset => 'إعادة تعيين';
+  @override
+  String get devClearStored => 'مسح البيانات المحفوظة على هذا الجهاز';
+  @override
+  String get devClearStoredNote =>
+      'يمسح نسخة اليوم المحفوظة على هذا الجهاز ويوقف الحفظ حتى إعادة التشغيل. '
+      'ما يظهر على الشاشة الآن لا يتغيّر، والسجل المعتمد يبقى على الخادم.';
+  @override
+  String get devClearStoredDone =>
+      'مُسحت البيانات المحفوظة. يبدأ التطبيق نظيفاً عند إعادة تشغيله.';
   @override
   String get devEventLog => 'سجل الأحداث';
 
@@ -1114,6 +1126,16 @@ class EnglishStrings extends AppStrings {
   String get devSpeedUp => 'Speed up';
   @override
   String get devReset => 'Reset';
+  @override
+  String get devClearStored => 'Clear data stored on this device';
+  @override
+  String get devClearStoredNote =>
+      'Clears this device\'s copy of today and stops saving until the app is '
+      'restarted. What is on screen now is left alone, and the record of '
+      'authority stays on the server.';
+  @override
+  String get devClearStoredDone =>
+      'Stored data cleared. The app starts clean on its next launch.';
   @override
   String get devEventLog => 'Event log';
 

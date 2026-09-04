@@ -43,6 +43,17 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- The emergency button dials the transport operator. iOS hides schemes
+	     the app has not declared. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+	</array>
+	<!-- The app uses only the HTTPS the system provides, so every TestFlight
+	     upload can skip the export-compliance question rather than answering
+	     it by hand each time. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

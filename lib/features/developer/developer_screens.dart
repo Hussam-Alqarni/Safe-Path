@@ -108,6 +108,16 @@ class DeveloperControlsScreen extends ConsumerWidget {
         ),
         const SizedBox(height: Gap.lg),
         SectionCard(
+          title: s.devReset,
+          subtitle: s.devClearStoredNote,
+          child: OutlinedButton.icon(
+            icon: Icon(Icons.delete_sweep_rounded, color: c.critical),
+            label: Text(s.devClearStored),
+            onPressed: () => _clearStored(context, ref),
+          ),
+        ),
+        const SizedBox(height: Gap.lg),
+        SectionCard(
           title: s.devImpersonate,
           subtitle: s.devImpersonationLogged,
           child: Wrap(
@@ -125,6 +135,19 @@ class DeveloperControlsScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Wipes the device's copy of the day.
+  ///
+  /// Deliberately does not clear what is already in memory: the running app
+  /// is mid-day and mid-trip, and silently emptying a driver's manifest is a
+  /// far worse outcome than a reset that takes effect on the next launch.
+  Future<void> _clearStored(BuildContext context, WidgetRef ref) async {
+    final s = AppStrings.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    await ref.read(controllerProvider.notifier).clearPersistence();
+    messenger.showSnackBar(SnackBar(content: Text(s.devClearStoredDone)));
   }
 
   /// Marks a boarded student so the simulator never scans them off — the exact

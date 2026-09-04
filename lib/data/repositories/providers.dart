@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safe_path/core/config/app_config.dart';
 import 'package:safe_path/core/platform/dialer.dart';
+import 'package:safe_path/data/persistence/local_store.dart';
 import 'package:safe_path/data/repositories/app_state.dart';
 import 'package:safe_path/data/repositories/safe_path_controller.dart';
 import 'package:safe_path/data/seed/seed_data.dart';
@@ -17,10 +18,19 @@ final appConfigProvider = Provider<AppConfig>(
   (ref) => throw UnimplementedError('appConfigProvider must be overridden'),
 );
 
+/// Where the app remembers today.
+///
+/// Defaults to keeping nothing, so a test or a throwaway build never writes to
+/// a device it does not own. `main()` overrides it with the real store.
+final localStoreProvider = Provider<LocalStore>((ref) => InMemoryLocalStore());
+
 // StateNotifierProvider disposes the notifier it creates, so registering an
 // extra onDispose here would call dispose twice and throw.
 final controllerProvider = StateNotifierProvider<SafePathController, AppState>(
-  (ref) => SafePathController(config: ref.watch(appConfigProvider)),
+  (ref) => SafePathController(
+    config: ref.watch(appConfigProvider),
+    store: ref.watch(localStoreProvider),
+  ),
 );
 
 /// The role whose screens are showing — impersonation aware.

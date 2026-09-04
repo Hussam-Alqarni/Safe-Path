@@ -176,7 +176,7 @@ flutter run -d <device-id> --dart-define=GOOGLE_MAPS_API_KEY=YOUR_KEY
 ## ٩. الاختبارات
 
 ```bash
-flutter test        # ١٧٥ اختباراً
+flutter test        # ٢١١ اختباراً
 dart analyze        # يجب أن يبقى نظيفاً
 ```
 
